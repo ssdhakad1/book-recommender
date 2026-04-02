@@ -1,5 +1,5 @@
 const express = require('express');
-const Anthropic = require('@anthropic-ai/sdk');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const axios = require('axios');
 const { PrismaClient } = require('@prisma/client');
 const authMiddleware = require('../middleware/auth');
@@ -64,7 +64,8 @@ router.post('/', async (req, res) => {
   const numLimit = Math.min(parseInt(limit, 10) || 10, 20);
 
   try {
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     let prompt = '';
 
@@ -142,20 +143,15 @@ Return ONLY valid JSON, no extra text. Format:
 [{"title":"...","author":"...","description":"...","reason":"...","genres":["..."]}]`;
     }
 
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 2048,
-      messages: [{ role: 'user', content: prompt }],
-    });
-
-    const text = message.content[0].text;
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
     const jsonStr = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     let recommendations;
 
     try {
       recommendations = JSON.parse(jsonStr);
     } catch (parseErr) {
-      console.error('Failed to parse Claude response:', text);
+      console.error('Failed to parse Gemini response:', text);
       return res.status(500).json({ error: 'Failed to parse AI recommendations. Please try again.' });
     }
 

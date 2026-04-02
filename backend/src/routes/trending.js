@@ -1,5 +1,5 @@
 const express = require('express');
-const Anthropic = require('@anthropic-ai/sdk');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const axios = require('axios');
 
 const router = express.Router();
@@ -73,7 +73,8 @@ async function fetchTrendingBooks() {
   let claudeBooks = null;
 
   try {
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     const prompt = `You are a book expert. List exactly 50 currently popular and trending books across different genres (fiction, non-fiction, fantasy, science fiction, mystery, romance, self-help, etc.).
 
@@ -89,18 +90,13 @@ Return a JSON array of exactly 50 books. Each object must have:
 Return ONLY valid JSON, no extra text. Format:
 [{"title":"...","author":"...","genres":["..."],"description":"...","rank":1}]`;
 
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 4096,
-      messages: [{ role: 'user', content: prompt }],
-    });
-
-    const text = message.content[0].text;
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
     const jsonStr = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     claudeBooks = JSON.parse(jsonStr);
 
     if (!Array.isArray(claudeBooks) || claudeBooks.length === 0) {
-      throw new Error('Invalid response from Claude');
+      throw new Error('Invalid response from Gemini');
     }
   } catch (err) {
     console.error('Claude trending error, using fallback:', err.message);
