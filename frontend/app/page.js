@@ -68,7 +68,7 @@ export default function HomePage() {
             </div>
             <h3 className="text-white font-semibold text-lg mb-2">AI Recommendations</h3>
             <p className="text-slate-400 text-sm leading-relaxed">
-              Claude AI analyzes your preferences to suggest the perfect next read — by author, genre, mood, or history.
+              Google Gemini AI analyzes your preferences to suggest the perfect next read — by author, genre, mood, or history.
             </p>
           </div>
 
@@ -96,7 +96,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="py-6 text-center text-slate-600 text-sm border-t border-slate-800">
-        <p>BookRecommender — Powered by Claude AI &amp; Google Books</p>
+        <p>BookRecommender — Powered by Google Gemini AI &amp; Google Books</p>
       </footer>
     </div>
   );

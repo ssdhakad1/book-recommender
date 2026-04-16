@@ -212,7 +212,7 @@ export default function DashboardPage() {
         {loading && (
           <div className="text-center py-16">
             <Loader2 className="w-10 h-10 text-blue-400 animate-spin mx-auto mb-4" />
-            <p className="text-slate-400">Claude is finding your perfect reads...</p>
+            <p className="text-slate-400">Gemini is finding your perfect reads...</p>
           </div>
         )}
 
