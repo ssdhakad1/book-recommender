@@ -11,6 +11,9 @@ const trendingRoutes = require('./routes/trending');
 
 const app = express();
 
+// Trust Railway's proxy
+app.set('trust proxy', 1);
+
 // CORS configuration
 const corsOptions = {
   origin: function (origin, callback) {
