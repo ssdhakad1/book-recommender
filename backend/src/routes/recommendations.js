@@ -1,5 +1,4 @@
 const express = require('express');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 const axios = require('axios');
 const { PrismaClient } = require('@prisma/client');
 const authMiddleware = require('../middleware/auth');
@@ -7,17 +6,34 @@ const authMiddleware = require('../middleware/auth');
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// All routes protected
 router.use(authMiddleware);
 
-function mapGoogleBook(item) {
+const MOOD_TO_QUERY = {
+  happy: 'uplifting feel-good',
+  sad: 'emotional heartfelt',
+  adventurous: 'adventure exploration quest',
+  romantic: 'romance love relationship',
+  thrilling: 'thriller suspense gripping',
+  scary: 'horror dark supernatural',
+  funny: 'humor comedy witty',
+  inspiring: 'inspirational motivation self-improvement',
+  mysterious: 'mystery detective crime',
+  thoughtful: 'philosophy literary fiction',
+  relaxing: 'cozy slice-of-life gentle',
+  dark: 'dark psychological noir',
+  epic: 'epic fantasy saga',
+  scientific: 'science popular science discovery',
+  historical: 'historical fiction history',
+};
+
+function mapGoogleBook(item, reason) {
   const info = item.volumeInfo || {};
   return {
     googleBooksId: item.id,
     title: info.title || 'Unknown Title',
     author: (info.authors || ['Unknown Author']).join(', '),
     coverUrl: info.imageLinks?.thumbnail?.replace('http://', 'https://') || null,
-    description: info.description || null,
+    description: info.description ? info.description.substring(0, 300) + (info.description.length > 300 ? '...' : '') : null,
     genres: info.categories || [],
     publishedDate: info.publishedDate || null,
     averageRating: info.averageRating || null,
@@ -25,95 +41,100 @@ function mapGoogleBook(item) {
     isbn: info.industryIdentifiers?.find((i) => i.type === 'ISBN_13')?.identifier || null,
     buyLink:
       item.saleInfo?.buyLink ||
-      `https://www.google.com/search?q=${encodeURIComponent(
-        (info.title || '') + ' ' + (info.authors?.[0] || '') + ' buy'
-      )}`,
+      `https://www.google.com/search?q=${encodeURIComponent((info.title || '') + ' ' + (info.authors?.[0] || '') + ' buy')}`,
+    reason: reason || 'Recommended based on your preferences',
   };
 }
 
-async function enrichBookWithGoogleData(title, author) {
+async function searchGoogleBooks(query, maxResults = 12) {
   try {
-    const query = `${title} ${author}`;
     const apiKey = process.env.GOOGLE_BOOKS_API_KEY;
     const keyParam = apiKey ? `&key=${apiKey}` : '';
-    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=1${keyParam}`;
-    const response = await axios.get(url, { timeout: 8000 });
-    const items = response.data.items || [];
-    if (items.length > 0) {
-      return mapGoogleBook(items[0]);
-    }
+    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=${maxResults}&orderBy=relevance&langRestrict=en${keyParam}`;
+    const response = await axios.get(url, { timeout: 10000 });
+    return (response.data.items || []).filter(
+      (item) => item.volumeInfo?.title && item.volumeInfo?.authors?.length > 0
+    );
   } catch (err) {
-    console.error(`Failed to enrich book "${title}":`, err.message);
+    console.error('Google Books search error:', err.message);
+    return [];
   }
-  return null;
+}
+
+function dedupeBooks(books) {
+  const seen = new Set();
+  return books.filter((b) => {
+    const key = b.title.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 // POST /api/recommendations
 router.post('/', async (req, res) => {
   const { mode, input, limit = 10 } = req.body;
+  const numLimit = Math.min(parseInt(limit, 10) || 10, 20);
 
   const validModes = ['author', 'genre', 'mood', 'history'];
   if (!validModes.includes(mode)) {
     return res.status(400).json({ error: 'Invalid mode. Must be: author, genre, mood, or history.' });
   }
-
   if (mode !== 'history' && (!input || input.trim().length === 0)) {
     return res.status(400).json({ error: 'Input is required for this recommendation mode.' });
   }
 
-  const numLimit = Math.min(parseInt(limit, 10) || 10, 20);
-
   try {
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-
-    let prompt = '';
+    let items = [];
 
     if (mode === 'author') {
-      prompt = `You are a book recommendation expert. Recommend exactly ${numLimit} books similar to works by the author "${input.trim()}".
+      const authorName = input.trim();
+      // First get their own popular books
+      const ownBooks = await searchGoogleBooks(`inauthor:"${authorName}"`, numLimit);
+      // Then find similar authors' books
+      const similarBooks = await searchGoogleBooks(`${authorName} similar authors fiction`, numLimit);
+      const combined = [...ownBooks, ...similarBooks];
+      const reason = `Popular and highly-rated work by or similar to ${authorName}`;
+      items = dedupeBooks(combined)
+        .slice(0, numLimit)
+        .map((item) => mapGoogleBook(item, reason));
+    }
 
-Return a JSON array of exactly ${numLimit} book recommendations. Each object must have:
-- title: string
-- author: string
-- description: string (2-3 sentences about the book)
-- reason: string (why this is recommended based on the author's style/themes)
-- genres: array of strings
+    else if (mode === 'genre') {
+      const genre = input.trim();
+      const [batch1, batch2] = await Promise.all([
+        searchGoogleBooks(`subject:"${genre}" bestseller`, numLimit),
+        searchGoogleBooks(`${genre} highly rated popular books`, numLimit),
+      ]);
+      const combined = [...batch1, ...batch2];
+      const reason = `A top-rated book in the ${genre} genre`;
+      items = dedupeBooks(combined)
+        .slice(0, numLimit)
+        .map((item) => mapGoogleBook(item, reason));
+    }
 
-Return ONLY valid JSON, no extra text. Format:
-[{"title":"...","author":"...","description":"...","reason":"...","genres":["..."]}]`;
-    } else if (mode === 'genre') {
-      prompt = `You are a book recommendation expert. Recommend exactly ${numLimit} excellent books in the "${input.trim()}" genre.
+    else if (mode === 'mood') {
+      const mood = input.trim().toLowerCase();
+      // Find best matching mood query or fall back to the raw input
+      const matchedKey = Object.keys(MOOD_TO_QUERY).find((k) => mood.includes(k));
+      const query = matchedKey ? MOOD_TO_QUERY[matchedKey] : mood;
+      const [batch1, batch2] = await Promise.all([
+        searchGoogleBooks(`${query} books`, numLimit),
+        searchGoogleBooks(`${query} popular fiction`, numLimit),
+      ]);
+      const combined = [...batch1, ...batch2];
+      const reason = `Matches the mood: "${input.trim()}"`;
+      items = dedupeBooks(combined)
+        .slice(0, numLimit)
+        .map((item) => mapGoogleBook(item, reason));
+    }
 
-Return a JSON array of exactly ${numLimit} book recommendations. Each object must have:
-- title: string
-- author: string
-- description: string (2-3 sentences about the book)
-- reason: string (why this is a standout book in the genre)
-- genres: array of strings
-
-Return ONLY valid JSON, no extra text. Format:
-[{"title":"...","author":"...","description":"...","reason":"...","genres":["..."]}]`;
-    } else if (mode === 'mood') {
-      prompt = `You are a book recommendation expert. A reader is looking for books with this mood or theme: "${input.trim()}"
-
-Recommend exactly ${numLimit} books that perfectly match this mood or what they're looking for.
-
-Return a JSON array of exactly ${numLimit} book recommendations. Each object must have:
-- title: string
-- author: string
-- description: string (2-3 sentences about the book)
-- reason: string (why this book matches the requested mood/theme)
-- genres: array of strings
-
-Return ONLY valid JSON, no extra text. Format:
-[{"title":"...","author":"...","description":"...","reason":"...","genres":["..."]}]`;
-    } else if (mode === 'history') {
-      // Fetch user's finished books
+    else if (mode === 'history') {
       const finishedEntries = await prisma.libraryEntry.findMany({
         where: { userId: req.user.id, status: 'FINISHED' },
         include: { book: true },
         orderBy: { finishedAt: 'desc' },
-        take: 20,
+        take: 10,
       });
 
       if (finishedEntries.length === 0) {
@@ -122,70 +143,32 @@ Return ONLY valid JSON, no extra text. Format:
         });
       }
 
-      const bookList = finishedEntries
-        .map((e) => `- "${e.book.title}" by ${e.book.author}${e.book.genres.length > 0 ? ` (${e.book.genres.join(', ')})` : ''}`)
-        .join('\n');
+      // Extract favourite authors and genres
+      const authors = [...new Set(finishedEntries.map((e) => e.book.author.split(',')[0].trim()))].slice(0, 3);
+      const genres = [...new Set(finishedEntries.flatMap((e) => e.book.genres))].slice(0, 3);
+      const finishedTitles = new Set(finishedEntries.map((e) => e.book.title.toLowerCase()));
 
-      prompt = `You are a book recommendation expert. Based on the following books a reader has finished:
+      // Build search queries from history
+      const queries = [];
+      if (genres.length > 0) queries.push(`subject:"${genres[0]}" popular`);
+      if (authors.length > 0) queries.push(`inauthor:"${authors[0]}" OR inauthor:"${authors[1] || authors[0]}"`);
+      if (genres.length > 1) queries.push(`${genres.join(' OR ')} bestseller`);
 
-${bookList}
-
-Recommend exactly ${numLimit} new books they would love, based on their reading taste and patterns.
-
-Return a JSON array of exactly ${numLimit} book recommendations. Each object must have:
-- title: string
-- author: string
-- description: string (2-3 sentences about the book)
-- reason: string (why this matches their reading history/taste)
-- genres: array of strings
-
-Return ONLY valid JSON, no extra text. Format:
-[{"title":"...","author":"...","description":"...","reason":"...","genres":["..."]}]`;
+      const batches = await Promise.all(queries.map((q) => searchGoogleBooks(q, numLimit)));
+      const combined = batches.flat().filter((item) => !finishedTitles.has(item.volumeInfo?.title?.toLowerCase()));
+      const reason = `Recommended based on your reading history (${genres.slice(0, 2).join(', ') || 'your taste'})`;
+      items = dedupeBooks(combined)
+        .slice(0, numLimit)
+        .map((item) => mapGoogleBook(item, reason));
     }
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
-    const jsonStr = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    let recommendations;
-
-    try {
-      recommendations = JSON.parse(jsonStr);
-    } catch (parseErr) {
-      console.error('Failed to parse Gemini response:', text);
-      return res.status(500).json({ error: 'Failed to parse AI recommendations. Please try again.' });
+    if (items.length === 0) {
+      return res.status(404).json({ error: 'No recommendations found. Try a different search.' });
     }
 
-    if (!Array.isArray(recommendations)) {
-      return res.status(500).json({ error: 'Unexpected AI response format. Please try again.' });
-    }
-
-    // Enrich with Google Books data
-    const enriched = await Promise.all(
-      recommendations.map(async (rec) => {
-        const googleData = await enrichBookWithGoogleData(rec.title, rec.author);
-        return {
-          title: rec.title,
-          author: rec.author,
-          description: rec.description,
-          reason: rec.reason,
-          genres: rec.genres || [],
-          coverUrl: googleData?.coverUrl || null,
-          googleBooksId: googleData?.googleBooksId || null,
-          publishedDate: googleData?.publishedDate || null,
-          averageRating: googleData?.averageRating || null,
-          pageCount: googleData?.pageCount || null,
-          isbn: googleData?.isbn || null,
-          buyLink: googleData?.buyLink || `https://www.google.com/search?q=${encodeURIComponent(rec.title + ' ' + rec.author + ' buy')}`,
-        };
-      })
-    );
-
-    res.json({ recommendations: enriched, mode, input: mode !== 'history' ? input : undefined });
+    res.json({ recommendations: items, mode, input: mode !== 'history' ? input : undefined });
   } catch (err) {
     console.error('Recommendations error:', err);
-    if (err.status === 401) {
-      return res.status(500).json({ error: 'AI service authentication failed.' });
-    }
     res.status(500).json({ error: 'Failed to generate recommendations. Please try again.' });
   }
 });
