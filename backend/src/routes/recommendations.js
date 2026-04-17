@@ -9,54 +9,63 @@ const prisma = new PrismaClient();
 router.use(authMiddleware);
 
 const MOOD_TO_QUERY = {
-  happy: 'uplifting feel-good',
-  sad: 'emotional heartfelt',
+  happy: 'uplifting feel-good comedy',
+  sad: 'emotional heartfelt drama',
   adventurous: 'adventure exploration quest',
   romantic: 'romance love relationship',
   thrilling: 'thriller suspense gripping',
   scary: 'horror dark supernatural',
   funny: 'humor comedy witty',
-  inspiring: 'inspirational motivation self-improvement',
+  inspiring: 'inspirational motivation success',
   mysterious: 'mystery detective crime',
   thoughtful: 'philosophy literary fiction',
-  relaxing: 'cozy slice-of-life gentle',
+  relaxing: 'cozy gentle slice-of-life',
   dark: 'dark psychological noir',
   epic: 'epic fantasy saga',
-  scientific: 'science popular science discovery',
+  scientific: 'science popular discovery',
   historical: 'historical fiction history',
 };
 
-function mapGoogleBook(item, reason) {
-  const info = item.volumeInfo || {};
+function mapOpenLibraryBook(doc, reason) {
+  const coverId = doc.cover_i;
+  const author = Array.isArray(doc.author_name) ? doc.author_name[0] : (doc.author_name || 'Unknown Author');
+  const title = doc.title || 'Unknown Title';
   return {
-    googleBooksId: item.id,
-    title: info.title || 'Unknown Title',
-    author: (info.authors || ['Unknown Author']).join(', '),
-    coverUrl: info.imageLinks?.thumbnail?.replace('http://', 'https://') || null,
-    description: info.description ? info.description.substring(0, 300) + (info.description.length > 300 ? '...' : '') : null,
-    genres: info.categories || [],
-    publishedDate: info.publishedDate || null,
-    averageRating: info.averageRating || null,
-    pageCount: info.pageCount || null,
-    isbn: info.industryIdentifiers?.find((i) => i.type === 'ISBN_13')?.identifier || null,
-    buyLink:
-      item.saleInfo?.buyLink ||
-      `https://www.google.com/search?q=${encodeURIComponent((info.title || '') + ' ' + (info.authors?.[0] || '') + ' buy')}`,
+    googleBooksId: doc.key ? doc.key.replace('/works/', 'OL_') : null,
+    title,
+    author,
+    coverUrl: coverId ? `https://covers.openlibrary.org/b/id/${coverId}-M.jpg` : null,
+    description: doc.first_sentence ? (Array.isArray(doc.first_sentence) ? doc.first_sentence[0] : doc.first_sentence) : null,
+    genres: Array.isArray(doc.subject) ? doc.subject.slice(0, 4) : [],
+    publishedDate: doc.first_publish_year ? String(doc.first_publish_year) : null,
+    averageRating: doc.ratings_average ? Math.round(doc.ratings_average * 10) / 10 : null,
+    pageCount: doc.number_of_pages_median || null,
+    isbn: Array.isArray(doc.isbn) ? doc.isbn[0] : null,
+    buyLink: `https://www.google.com/search?q=${encodeURIComponent(title + ' ' + author + ' buy')}`,
     reason: reason || 'Recommended based on your preferences',
   };
 }
 
-async function searchGoogleBooks(query, maxResults = 12) {
+async function searchOpenLibrary(query, limit = 12) {
   try {
-    const apiKey = process.env.GOOGLE_BOOKS_API_KEY;
-    const keyParam = apiKey ? `&key=${apiKey}` : '';
-    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=${maxResults}&orderBy=relevance&langRestrict=en${keyParam}`;
-    const response = await axios.get(url, { timeout: 10000 });
-    return (response.data.items || []).filter(
-      (item) => item.volumeInfo?.title && item.volumeInfo?.authors?.length > 0
-    );
+    const fields = 'title,author_name,cover_i,subject,first_publish_year,isbn,key,number_of_pages_median,ratings_average,first_sentence';
+    const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=${limit}&fields=${fields}`;
+    const response = await axios.get(url, { timeout: 12000 });
+    return (response.data.docs || []).filter(d => d.title && d.author_name);
   } catch (err) {
-    console.error('Google Books search error:', err.message);
+    console.error('Open Library search error:', err.message);
+    return [];
+  }
+}
+
+async function searchByAuthor(author, limit = 12) {
+  try {
+    const fields = 'title,author_name,cover_i,subject,first_publish_year,isbn,key,number_of_pages_median,ratings_average';
+    const url = `https://openlibrary.org/search.json?author=${encodeURIComponent(author)}&limit=${limit}&fields=${fields}&sort=rating`;
+    const response = await axios.get(url, { timeout: 12000 });
+    return (response.data.docs || []).filter(d => d.title && d.author_name);
+  } catch (err) {
+    console.error('Open Library author search error:', err.message);
     return [];
   }
 }
@@ -89,44 +98,34 @@ router.post('/', async (req, res) => {
 
     if (mode === 'author') {
       const authorName = input.trim();
-      // First get their own popular books
-      const ownBooks = await searchGoogleBooks(`inauthor:"${authorName}"`, numLimit);
-      // Then find similar authors' books
-      const similarBooks = await searchGoogleBooks(`${authorName} similar authors fiction`, numLimit);
-      const combined = [...ownBooks, ...similarBooks];
-      const reason = `Popular and highly-rated work by or similar to ${authorName}`;
-      items = dedupeBooks(combined)
-        .slice(0, numLimit)
-        .map((item) => mapGoogleBook(item, reason));
+      const [byAuthor, similar] = await Promise.all([
+        searchByAuthor(authorName, numLimit + 5),
+        searchOpenLibrary(`${authorName} fiction`, numLimit),
+      ]);
+      const reason = `Recommended based on works by or similar to ${authorName}`;
+      items = dedupeBooks([...byAuthor, ...similar]).slice(0, numLimit).map(d => mapOpenLibraryBook(d, reason));
     }
 
     else if (mode === 'genre') {
       const genre = input.trim();
       const [batch1, batch2] = await Promise.all([
-        searchGoogleBooks(`subject:"${genre}" bestseller`, numLimit),
-        searchGoogleBooks(`${genre} highly rated popular books`, numLimit),
+        searchOpenLibrary(`subject:${genre}`, numLimit + 5),
+        searchOpenLibrary(`${genre} popular books`, numLimit),
       ]);
-      const combined = [...batch1, ...batch2];
       const reason = `A top-rated book in the ${genre} genre`;
-      items = dedupeBooks(combined)
-        .slice(0, numLimit)
-        .map((item) => mapGoogleBook(item, reason));
+      items = dedupeBooks([...batch1, ...batch2]).slice(0, numLimit).map(d => mapOpenLibraryBook(d, reason));
     }
 
     else if (mode === 'mood') {
       const mood = input.trim().toLowerCase();
-      // Find best matching mood query or fall back to the raw input
-      const matchedKey = Object.keys(MOOD_TO_QUERY).find((k) => mood.includes(k));
+      const matchedKey = Object.keys(MOOD_TO_QUERY).find(k => mood.includes(k));
       const query = matchedKey ? MOOD_TO_QUERY[matchedKey] : mood;
       const [batch1, batch2] = await Promise.all([
-        searchGoogleBooks(`${query} books`, numLimit),
-        searchGoogleBooks(`${query} popular fiction`, numLimit),
+        searchOpenLibrary(query, numLimit + 5),
+        searchOpenLibrary(`${query} fiction`, numLimit),
       ]);
-      const combined = [...batch1, ...batch2];
       const reason = `Matches the mood: "${input.trim()}"`;
-      items = dedupeBooks(combined)
-        .slice(0, numLimit)
-        .map((item) => mapGoogleBook(item, reason));
+      items = dedupeBooks([...batch1, ...batch2]).slice(0, numLimit).map(d => mapOpenLibraryBook(d, reason));
     }
 
     else if (mode === 'history') {
@@ -143,27 +142,23 @@ router.post('/', async (req, res) => {
         });
       }
 
-      // Extract favourite authors and genres
-      const authors = [...new Set(finishedEntries.map((e) => e.book.author.split(',')[0].trim()))].slice(0, 3);
-      const genres = [...new Set(finishedEntries.flatMap((e) => e.book.genres))].slice(0, 3);
-      const finishedTitles = new Set(finishedEntries.map((e) => e.book.title.toLowerCase()));
+      const authors = [...new Set(finishedEntries.map(e => e.book.author.split(',')[0].trim()))].slice(0, 2);
+      const genres = [...new Set(finishedEntries.flatMap(e => e.book.genres))].slice(0, 3);
+      const finishedTitles = new Set(finishedEntries.map(e => e.book.title.toLowerCase()));
 
-      // Build search queries from history
       const queries = [];
-      if (genres.length > 0) queries.push(`subject:"${genres[0]}" popular`);
-      if (authors.length > 0) queries.push(`inauthor:"${authors[0]}" OR inauthor:"${authors[1] || authors[0]}"`);
-      if (genres.length > 1) queries.push(`${genres.join(' OR ')} bestseller`);
+      if (genres.length > 0) queries.push(searchOpenLibrary(`subject:${genres[0]}`, numLimit));
+      if (authors.length > 0) queries.push(searchByAuthor(authors[0], numLimit));
+      if (genres.length > 1) queries.push(searchOpenLibrary(genres.join(' '), numLimit));
 
-      const batches = await Promise.all(queries.map((q) => searchGoogleBooks(q, numLimit)));
-      const combined = batches.flat().filter((item) => !finishedTitles.has(item.volumeInfo?.title?.toLowerCase()));
+      const batches = await Promise.all(queries);
+      const combined = batches.flat().filter(d => !finishedTitles.has(d.title?.toLowerCase()));
       const reason = `Recommended based on your reading history (${genres.slice(0, 2).join(', ') || 'your taste'})`;
-      items = dedupeBooks(combined)
-        .slice(0, numLimit)
-        .map((item) => mapGoogleBook(item, reason));
+      items = dedupeBooks(combined).slice(0, numLimit).map(d => mapOpenLibraryBook(d, reason));
     }
 
     if (items.length === 0) {
-      return res.status(404).json({ error: 'No recommendations found. Try a different search.' });
+      return res.status(404).json({ error: 'No recommendations found. Try a different search term.' });
     }
 
     res.json({ recommendations: items, mode, input: mode !== 'history' ? input : undefined });

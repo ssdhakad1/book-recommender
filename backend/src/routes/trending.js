@@ -61,32 +61,24 @@ const TRENDING_BOOKS = [
   { title: 'The Kite Runner', author: 'Khaled Hosseini', genres: ['Historical Fiction', 'Drama'], rank: 50 },
 ];
 
-function mapGoogleBook(item) {
-  const info = item.volumeInfo || {};
-  return {
-    googleBooksId: item.id,
-    title: info.title || 'Unknown Title',
-    author: (info.authors || ['Unknown Author']).join(', '),
-    coverUrl: info.imageLinks?.thumbnail?.replace('http://', 'https://') || null,
-    description: info.description ? info.description.substring(0, 300) + (info.description.length > 300 ? '...' : '') : null,
-    genres: info.categories || [],
-    publishedDate: info.publishedDate || null,
-    averageRating: info.averageRating || null,
-    pageCount: info.pageCount || null,
-    buyLink:
-      item.saleInfo?.buyLink ||
-      `https://www.google.com/search?q=${encodeURIComponent((info.title || '') + ' ' + (info.authors?.[0] || '') + ' buy')}`,
-  };
-}
-
 async function enrichBook(title, author) {
   try {
-    const apiKey = process.env.GOOGLE_BOOKS_API_KEY;
-    const keyParam = apiKey ? `&key=${apiKey}` : '';
-    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(title + ' ' + author)}&maxResults=1${keyParam}`;
-    const response = await axios.get(url, { timeout: 8000 });
-    const items = response.data.items || [];
-    if (items.length > 0) return mapGoogleBook(items[0]);
+    const fields = 'title,author_name,cover_i,subject,first_publish_year,number_of_pages_median,ratings_average,key';
+    const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(title + ' ' + author)}&limit=1&fields=${fields}`;
+    const response = await axios.get(url, { timeout: 10000 });
+    const doc = (response.data.docs || [])[0];
+    if (!doc) return null;
+    const coverId = doc.cover_i;
+    return {
+      title: doc.title || title,
+      author: (doc.author_name || [author])[0],
+      coverUrl: coverId ? `https://covers.openlibrary.org/b/id/${coverId}-M.jpg` : null,
+      genres: (doc.subject || []).slice(0, 4),
+      publishedDate: doc.first_publish_year ? String(doc.first_publish_year) : null,
+      averageRating: doc.ratings_average ? Math.round(doc.ratings_average * 10) / 10 : null,
+      pageCount: doc.number_of_pages_median || null,
+      googleBooksId: doc.key ? doc.key.replace('/works/', 'OL_') : null,
+    };
   } catch (err) {
     console.error(`Enrich error for "${title}":`, err.message);
   }
@@ -97,22 +89,21 @@ async function buildTrendingList() {
   const enriched = [];
   for (let i = 0; i < TRENDING_BOOKS.length; i++) {
     const book = TRENDING_BOOKS[i];
-    const googleData = await enrichBook(book.title, book.author);
+    const data = await enrichBook(book.title, book.author);
     enriched.push({
       rank: book.rank,
-      title: googleData?.title || book.title,
-      author: googleData?.author || book.author,
-      genres: googleData?.genres?.length ? googleData.genres : book.genres,
-      description: googleData?.description || '',
-      coverUrl: googleData?.coverUrl || null,
-      googleBooksId: googleData?.googleBooksId || null,
-      publishedDate: googleData?.publishedDate || null,
-      averageRating: googleData?.averageRating || null,
-      pageCount: googleData?.pageCount || null,
-      buyLink: googleData?.buyLink || `https://www.google.com/search?q=${encodeURIComponent(book.title + ' ' + book.author + ' buy')}`,
+      title: data?.title || book.title,
+      author: data?.author || book.author,
+      genres: data?.genres?.length ? data.genres : book.genres,
+      description: '',
+      coverUrl: data?.coverUrl || null,
+      googleBooksId: data?.googleBooksId || null,
+      publishedDate: data?.publishedDate || null,
+      averageRating: data?.averageRating || null,
+      pageCount: data?.pageCount || null,
+      buyLink: `https://www.google.com/search?q=${encodeURIComponent(book.title + ' ' + book.author + ' buy')}`,
     });
-    // Small delay every 10 books to avoid hammering Google Books API
-    if (i % 10 === 9) await new Promise((r) => setTimeout(r, 300));
+    if (i % 10 === 9) await new Promise((r) => setTimeout(r, 200));
   }
   return enriched;
 }
@@ -124,17 +115,14 @@ router.get('/', async (req, res) => {
     if (cache.data && cache.timestamp && now - cache.timestamp < CACHE_TTL) {
       return res.json({ books: cache.data, cached: true });
     }
-
-    console.log('Building trending list from Google Books...');
+    console.log('Building trending list from Open Library...');
     const books = await buildTrendingList();
     cache.data = books;
     cache.timestamp = now;
-
     res.json({ books, cached: false });
   } catch (err) {
     console.error('Trending error:', err);
     if (cache.data) return res.json({ books: cache.data, cached: true, stale: true });
-    // Last resort: return the curated list without enrichment
     const bare = TRENDING_BOOKS.map((b) => ({ ...b, coverUrl: null, googleBooksId: null, description: '', buyLink: `https://www.google.com/search?q=${encodeURIComponent(b.title + ' ' + b.author + ' buy')}` }));
     res.json({ books: bare, cached: false });
   }
