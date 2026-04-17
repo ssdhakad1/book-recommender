@@ -66,9 +66,9 @@ export default function HomePage() {
             <div className="w-10 h-10 bg-blue-900/50 rounded-lg flex items-center justify-center mb-4">
               <Sparkles className="w-5 h-5 text-blue-400" />
             </div>
-            <h3 className="text-white font-semibold text-lg mb-2">AI Recommendations</h3>
+            <h3 className="text-white font-semibold text-lg mb-2">Smart Recommendations</h3>
             <p className="text-slate-400 text-sm leading-relaxed">
-              Google Gemini AI analyzes your preferences to suggest the perfect next read — by author, genre, mood, or history.
+              Powered by Open Library's vast catalog — get personalised suggestions by author, genre, mood, or reading history.
             </p>
           </div>
 
@@ -96,7 +96,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="py-6 text-center text-slate-600 text-sm border-t border-slate-800">
-        <p>BookRecommender — Powered by Google Gemini AI &amp; Google Books</p>
+        <p>BookRecommender — Powered by Open Library</p>
       </footer>
     </div>
   );
