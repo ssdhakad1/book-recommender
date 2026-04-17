@@ -26,6 +26,72 @@ function mapGoogleBook(item) {
   };
 }
 
+function mapOpenLibraryDoc(doc) {
+  const title = doc.title || 'Unknown Title';
+  const author = Array.isArray(doc.author_name) ? doc.author_name[0] : (doc.author_name || 'Unknown Author');
+  return {
+    googleBooksId: doc.key ? doc.key.replace('/works/', 'OL_') : null,
+    title,
+    author,
+    coverUrl: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` : null,
+    description: null,
+    genres: doc.subject ? doc.subject.slice(0, 4) : [],
+    publishedDate: doc.first_publish_year ? String(doc.first_publish_year) : null,
+    averageRating: doc.ratings_average || null,
+    pageCount: doc.number_of_pages_median || null,
+    isbn: Array.isArray(doc.isbn) ? doc.isbn[0] : null,
+    buyLink: `https://www.google.com/search?q=${encodeURIComponent(title + ' ' + author + ' buy')}`,
+  };
+}
+
+async function mapOpenLibraryWork(workId) {
+  const workUrl = `https://openlibrary.org/works/${workId}.json`;
+  const workRes = await axios.get(workUrl, { timeout: 10000 });
+  const work = workRes.data;
+
+  // Fetch author name
+  let author = 'Unknown Author';
+  if (work.authors && work.authors.length > 0) {
+    const authorKey = work.authors[0].author?.key || work.authors[0].key;
+    if (authorKey) {
+      try {
+        const authorRes = await axios.get(`https://openlibrary.org${authorKey}.json`, { timeout: 8000 });
+        author = authorRes.data.name || authorRes.data.personal_name || 'Unknown Author';
+      } catch {
+        // use default
+      }
+    }
+  }
+
+  let coverUrl = null;
+  if (work.covers && work.covers.length > 0) {
+    coverUrl = `https://covers.openlibrary.org/b/id/${work.covers[0]}-M.jpg`;
+  }
+
+  let description = null;
+  if (work.description) {
+    description = typeof work.description === 'string' ? work.description : work.description.value || null;
+  }
+
+  const genres = work.subjects ? work.subjects.slice(0, 5) : [];
+  const title = work.title || 'Unknown Title';
+  const buyLink = `https://www.google.com/search?q=${encodeURIComponent(title + ' ' + author + ' buy')}`;
+
+  return {
+    googleBooksId: `OL_${workId}`,
+    title,
+    author,
+    coverUrl,
+    description,
+    genres,
+    publishedDate: work.first_publish_date || null,
+    averageRating: null,
+    pageCount: null,
+    isbn: null,
+    buyLink,
+  };
+}
+
 // GET /api/books/search?q=query
 router.get('/search', async (req, res) => {
   const { q } = req.query;
@@ -35,15 +101,16 @@ router.get('/search', async (req, res) => {
   }
 
   try {
-    const apiKey = process.env.GOOGLE_BOOKS_API_KEY;
-    const keyParam = apiKey ? `&key=${apiKey}` : '';
-    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=20${keyParam}`;
+    const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=20&fields=title,author_name,cover_i,subject,first_publish_year,isbn,key,number_of_pages_median,ratings_average`;
 
     const response = await axios.get(url, { timeout: 10000 });
-    const items = response.data.items || [];
-    const books = items.map(mapGoogleBook);
+    const docs = response.data.docs || [];
 
-    res.json({ books, total: response.data.totalItems || 0 });
+    const books = docs
+      .filter((doc) => doc.title && doc.author_name)
+      .map(mapOpenLibraryDoc);
+
+    res.json({ books, total: response.data.numFound || books.length });
   } catch (err) {
     console.error('Book search error:', err.message);
     res.status(500).json({ error: 'Failed to search books. Please try again.' });
@@ -55,12 +122,21 @@ router.get('/:googleBooksId', async (req, res) => {
   const { googleBooksId } = req.params;
 
   try {
-    const apiKey = process.env.GOOGLE_BOOKS_API_KEY;
-    const keyParam = apiKey ? `?key=${apiKey}` : '';
-    const url = `https://www.googleapis.com/books/v1/volumes/${googleBooksId}${keyParam}`;
+    let bookData;
 
-    const response = await axios.get(url, { timeout: 10000 });
-    const bookData = mapGoogleBook(response.data);
+    if (googleBooksId.startsWith('OL_')) {
+      // Open Library book
+      const workId = googleBooksId.replace('OL_', '');
+      bookData = await mapOpenLibraryWork(workId);
+    } else {
+      // Google Books fallback
+      const apiKey = process.env.GOOGLE_BOOKS_API_KEY;
+      const keyParam = apiKey ? `?key=${apiKey}` : '';
+      const url = `https://www.googleapis.com/books/v1/volumes/${googleBooksId}${keyParam}`;
+
+      const response = await axios.get(url, { timeout: 10000 });
+      bookData = mapGoogleBook(response.data);
+    }
 
     // Upsert in local DB
     try {

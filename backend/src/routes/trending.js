@@ -3,11 +3,11 @@ const axios = require('axios');
 
 const router = express.Router();
 
-// In-memory cache (1 hour)
+// In-memory cache (24 hours — list changes daily)
 const cache = { data: null, timestamp: null };
-const CACHE_TTL = 60 * 60 * 1000;
+const CACHE_TTL = 24 * 60 * 60 * 1000;
 
-// Curated trending books list — enriched with Google Books data on first load
+// Curated trending books list — enriched with Open Library data on first load
 const TRENDING_BOOKS = [
   { title: 'Fourth Wing', author: 'Rebecca Yarros', genres: ['Fantasy', 'Romance'], rank: 1 },
   { title: 'Iron Flame', author: 'Rebecca Yarros', genres: ['Fantasy', 'Romance'], rank: 2 },
@@ -59,7 +59,63 @@ const TRENDING_BOOKS = [
   { title: 'The Silent Patient', author: 'Alex Michaelides', genres: ['Thriller', 'Mystery'], rank: 48 },
   { title: 'Where the Crawdads Sing', author: 'Delia Owens', genres: ['Mystery', 'Fiction'], rank: 49 },
   { title: 'The Kite Runner', author: 'Khaled Hosseini', genres: ['Historical Fiction', 'Drama'], rank: 50 },
+  { title: 'The Covenant of Water', author: 'Abraham Verghese', genres: ['Literary Fiction', 'Historical Fiction'], rank: 51 },
+  { title: 'Hello Beautiful', author: 'Ann Napolitano', genres: ['Literary Fiction', 'Family'], rank: 52 },
+  { title: 'Happy Place', author: 'Emily Henry', genres: ['Romance', 'Fiction'], rank: 53 },
+  { title: 'Spare', author: 'Prince Harry', genres: ['Memoir', 'Biography'], rank: 54 },
+  { title: 'Yellowface', author: 'R.F. Kuang', genres: ['Literary Fiction', 'Thriller'], rank: 55 },
+  { title: 'The Bee Sting', author: 'Paul Murray', genres: ['Literary Fiction', 'Family'], rank: 56 },
+  { title: 'North Woods', author: 'Daniel Mason', genres: ['Literary Fiction', 'Historical Fiction'], rank: 57 },
+  { title: 'Tom Clancy: Red Winter', author: 'Marc Cameron', genres: ['Thriller', 'Espionage'], rank: 58 },
+  { title: 'Demon Copperhead', author: 'Barbara Kingsolver', genres: ['Literary Fiction'], rank: 59 },
+  { title: 'Trust', author: 'Hernan Diaz', genres: ['Literary Fiction', 'Historical Fiction'], rank: 60 },
+  { title: 'Cloud Cuckoo Land', author: 'Anthony Doerr', genres: ['Literary Fiction', 'Historical Fiction'], rank: 61 },
+  { title: 'The Maid', author: 'Nita Prose', genres: ['Mystery', 'Cozy Mystery'], rank: 62 },
+  { title: 'Remarkably Bright Creatures', author: 'Shelby Van Pelt', genres: ['Fiction', 'Mystery'], rank: 63 },
+  { title: 'Babel', author: 'R.F. Kuang', genres: ['Fantasy', 'Historical Fiction'], rank: 64 },
+  { title: 'The Atlas Six', author: 'Olivie Blake', genres: ['Fantasy', 'Dark Academia'], rank: 65 },
+  { title: 'A Little Life', author: 'Hanya Yanagihara', genres: ['Literary Fiction', 'Drama'], rank: 66 },
+  { title: 'Pachinko', author: 'Min Jin Lee', genres: ['Historical Fiction', 'Literary Fiction'], rank: 67 },
+  { title: 'The Lincoln Highway', author: 'Amor Towles', genres: ['Historical Fiction', 'Adventure'], rank: 68 },
+  { title: 'Matrix', author: 'Lauren Groff', genres: ['Historical Fiction', 'Literary Fiction'], rank: 69 },
+  { title: 'Klara and the Sun', author: 'Kazuo Ishiguro', genres: ['Science Fiction', 'Literary Fiction'], rank: 70 },
+  { title: 'The Push', author: 'Ashley Audrain', genres: ['Thriller', 'Psychological Fiction'], rank: 71 },
+  { title: 'Malibu Rising', author: 'Taylor Jenkins Reid', genres: ['Fiction', 'Family'], rank: 72 },
+  { title: 'Daisy Jones and The Six', author: 'Taylor Jenkins Reid', genres: ['Historical Fiction', 'Music'], rank: 73 },
+  { title: 'The Invisible Life of Addie LaRue', author: 'V.E. Schwab', genres: ['Fantasy', 'Historical Fiction'], rank: 74 },
+  { title: 'Mexican Gothic', author: 'Silvia Moreno-Garcia', genres: ['Horror', 'Historical Fiction'], rank: 75 },
+  { title: 'The House in the Cerulean Sea', author: 'TJ Klune', genres: ['Fantasy', 'Romance'], rank: 76 },
+  { title: 'Piranesi', author: 'Susanna Clarke', genres: ['Fantasy', 'Mystery'], rank: 77 },
+  { title: 'The Vanishing Half', author: 'Brit Bennett', genres: ['Literary Fiction', 'Historical Fiction'], rank: 78 },
+  { title: 'Where the Crawdads Sing', author: 'Delia Owens', genres: ['Mystery', 'Fiction'], rank: 79 },
+  { title: 'One Italian Summer', author: 'Rebecca Serle', genres: ['Romance', 'Fiction'], rank: 80 },
 ];
+
+function seededShuffle(arr, seed) {
+  const a = [...arr];
+  let s = seed;
+  for (let i = a.length - 1; i > 0; i--) {
+    s = (s * 1664525 + 1013904223) & 0xffffffff;
+    const j = Math.abs(s) % (i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function getDailySelection() {
+  const daySeed = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+
+  // Top 10 always appear (ranks 1-10)
+  const alwaysTop = TRENDING_BOOKS.filter(b => b.rank <= 10);
+
+  // The remaining 70 books rotate — pick 40 from them
+  const rotatingPool = TRENDING_BOOKS.filter(b => b.rank > 10);
+  const shuffled = seededShuffle(rotatingPool, daySeed);
+  const rotatingSelection = shuffled.slice(0, 40);
+
+  // Combine: top 10 first, then 40 rotating ones
+  return [...alwaysTop, ...rotatingSelection];
+}
 
 async function enrichBook(title, author) {
   try {
@@ -86,9 +142,10 @@ async function enrichBook(title, author) {
 }
 
 async function buildTrendingList() {
+  const selectedBooks = getDailySelection();
   const enriched = [];
-  for (let i = 0; i < TRENDING_BOOKS.length; i++) {
-    const book = TRENDING_BOOKS[i];
+  for (let i = 0; i < selectedBooks.length; i++) {
+    const book = selectedBooks[i];
     const data = await enrichBook(book.title, book.author);
     enriched.push({
       rank: book.rank,
@@ -123,7 +180,8 @@ router.get('/', async (req, res) => {
   } catch (err) {
     console.error('Trending error:', err);
     if (cache.data) return res.json({ books: cache.data, cached: true, stale: true });
-    const bare = TRENDING_BOOKS.map((b) => ({ ...b, coverUrl: null, googleBooksId: null, description: '', buyLink: `https://www.google.com/search?q=${encodeURIComponent(b.title + ' ' + b.author + ' buy')}` }));
+    const selection = getDailySelection();
+    const bare = selection.map((b) => ({ ...b, coverUrl: null, googleBooksId: null, description: '', buyLink: `https://www.google.com/search?q=${encodeURIComponent(b.title + ' ' + b.author + ' buy')}` }));
     res.json({ books: bare, cached: false });
   }
 });

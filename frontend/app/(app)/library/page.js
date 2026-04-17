@@ -21,6 +21,8 @@ const FILTERS = [
   { id: 'FINISHED', label: 'Finished' },
 ];
 
+const STATUS_ORDER = { WISHLIST: 0, READING: 1, FINISHED: 2 };
+
 function StarDisplay({ rating, size = 'sm' }) {
   const cls = size === 'sm' ? 'w-3.5 h-3.5' : 'w-5 h-5';
   return (
@@ -35,6 +37,13 @@ function StarDisplay({ rating, size = 'sm' }) {
   );
 }
 
+function SortIcon({ column, sortConfig }) {
+  if (sortConfig.key !== column) {
+    return <span className="ml-1 opacity-40">↕</span>;
+  }
+  return <span className="ml-1">{sortConfig.dir === 'asc' ? '↑' : '↓'}</span>;
+}
+
 export default function LibraryPage() {
   const [entries, setEntries] = useState([]);
   const [reviews, setReviews] = useState({}); // { [entryId]: { content, rating } | null }
@@ -42,6 +51,7 @@ export default function LibraryPage() {
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('ALL');
   const [updatingEntryId, setUpdatingEntryId] = useState(null);
+  const [sortConfig, setSortConfig] = useState({ key: null, dir: 'asc' });
 
   // Edit/write modal state
   const [editModal, setEditModal] = useState({ open: false, entryId: null });
@@ -121,7 +131,39 @@ export default function LibraryPage() {
     setEditModal({ open: false, entryId: null });
   };
 
-  const filteredEntries = filter === 'ALL' ? entries : entries.filter((e) => e.status === filter);
+  const handleSort = (key) => {
+    setSortConfig((prev) => {
+      if (prev.key === key) {
+        return { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key, dir: 'asc' };
+    });
+  };
+
+  const baseFiltered = filter === 'ALL' ? entries : entries.filter((e) => e.status === filter);
+
+  const filteredEntries = [...baseFiltered].sort((a, b) => {
+    if (!sortConfig.key) return 0;
+    let aVal, bVal;
+    if (sortConfig.key === 'title') {
+      aVal = (a.book.title || '').toLowerCase();
+      bVal = (b.book.title || '').toLowerCase();
+    } else if (sortConfig.key === 'author') {
+      aVal = (a.book.author || '').toLowerCase();
+      bVal = (b.book.author || '').toLowerCase();
+    } else if (sortConfig.key === 'status') {
+      aVal = STATUS_ORDER[a.status] ?? 0;
+      bVal = STATUS_ORDER[b.status] ?? 0;
+    } else if (sortConfig.key === 'addedAt') {
+      aVal = new Date(a.addedAt).getTime();
+      bVal = new Date(b.addedAt).getTime();
+    } else {
+      return 0;
+    }
+    if (aVal < bVal) return sortConfig.dir === 'asc' ? -1 : 1;
+    if (aVal > bVal) return sortConfig.dir === 'asc' ? 1 : -1;
+    return 0;
+  });
 
   const counts = {
     ALL: entries.length,
@@ -203,9 +245,30 @@ export default function LibraryPage() {
                 <thead>
                   <tr className="border-b border-slate-700 bg-slate-800/80">
                     <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3 w-16">Cover</th>
-                    <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3">Book</th>
-                    <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3 w-52">Status</th>
-                    <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3 w-32">Added</th>
+                    <th
+                      className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-white transition-colors select-none"
+                      onClick={() => handleSort('title')}
+                    >
+                      Book <SortIcon column="title" sortConfig={sortConfig} />
+                    </th>
+                    <th
+                      className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3 w-36 cursor-pointer hover:text-white transition-colors select-none"
+                      onClick={() => handleSort('author')}
+                    >
+                      Author <SortIcon column="author" sortConfig={sortConfig} />
+                    </th>
+                    <th
+                      className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3 w-52 cursor-pointer hover:text-white transition-colors select-none"
+                      onClick={() => handleSort('status')}
+                    >
+                      Status <SortIcon column="status" sortConfig={sortConfig} />
+                    </th>
+                    <th
+                      className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3 w-32 cursor-pointer hover:text-white transition-colors select-none"
+                      onClick={() => handleSort('addedAt')}
+                    >
+                      Added <SortIcon column="addedAt" sortConfig={sortConfig} />
+                    </th>
                     <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3 w-48">Review</th>
                     <th className="text-right text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3 w-24">Actions</th>
                   </tr>
@@ -231,7 +294,7 @@ export default function LibraryPage() {
                           </div>
                         </td>
 
-                        {/* Title + Author */}
+                        {/* Title */}
                         <td className="px-4 py-3">
                           {entry.book.googleBooksId ? (
                             <Link href={`/book/${entry.book.googleBooksId}`} className="text-white font-medium hover:text-blue-400 transition-colors line-clamp-2">
@@ -240,7 +303,11 @@ export default function LibraryPage() {
                           ) : (
                             <span className="text-white font-medium line-clamp-2">{entry.book.title}</span>
                           )}
-                          <p className="text-slate-400 text-sm mt-0.5">{entry.book.author}</p>
+                        </td>
+
+                        {/* Author */}
+                        <td className="px-4 py-3">
+                          <p className="text-slate-400 text-sm">{entry.book.author}</p>
                         </td>
 
                         {/* Status */}

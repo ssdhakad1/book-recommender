@@ -215,7 +215,10 @@ router.post('/', async (req, res) => {
     // ── By History ─────────────────────────────────────────────────────────────
     // Strategy:
     //  1. Pull user's finished books from DB
-    //  2. Extract their favourite authors + subjects
+    //  2. Fetch reviews and weight authors/genres by rating
+    //     - Rating >= 4 → count 3x
+    //     - Rating 3    → count 1x
+    //     - Rating 1-2 or no review → skip for subject extraction (but still exclude titles)
     //  3. For each favourite author, find their top subjects
     //  4. Search those subjects, excluding already-read books
     //  5. Rank by how many of the user's subjects match
@@ -233,9 +236,66 @@ router.post('/', async (req, res) => {
         });
       }
 
+      // Fetch reviews for all finished books
+      const reviews = await prisma.review.findMany({
+        where: { userId: req.user.id, bookId: { in: finishedEntries.map(e => e.bookId) } },
+      });
+      const reviewMap = {};
+      reviews.forEach(r => { reviewMap[r.bookId] = r.rating; });
+
       const finishedTitles = new Set(finishedEntries.map(e => e.book.title.toLowerCase()));
-      const topAuthors = [...new Set(finishedEntries.map(e => e.book.author.split(',')[0].trim()))].slice(0, 3);
-      const storedGenres = [...new Set(finishedEntries.flatMap(e => e.book.genres))].slice(0, 4);
+
+      // Build weighted author and genre lists
+      const weightedAuthors = [];
+      const weightedGenres = [];
+
+      for (const entry of finishedEntries) {
+        const rating = reviewMap[entry.bookId];
+        let weight = 0;
+        if (rating >= 4) {
+          weight = 3;
+        } else if (rating === 3) {
+          weight = 1;
+        } else {
+          // rating 1-2 or no review: skip for extraction
+          weight = 0;
+        }
+
+        if (weight > 0) {
+          const author = entry.book.author.split(',')[0].trim();
+          for (let i = 0; i < weight; i++) {
+            weightedAuthors.push(author);
+            entry.book.genres.forEach(g => weightedGenres.push(g));
+          }
+        }
+      }
+
+      // If no weighted authors (all low-rated or unreviewed), fall back to unweighted top authors
+      let topAuthors;
+      if (weightedAuthors.length === 0) {
+        topAuthors = [...new Set(finishedEntries.map(e => e.book.author.split(',')[0].trim()))].slice(0, 3);
+      } else {
+        // Count frequency of weighted authors
+        const authorFreq = {};
+        weightedAuthors.forEach(a => { authorFreq[a] = (authorFreq[a] || 0) + 1; });
+        topAuthors = Object.entries(authorFreq)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 3)
+          .map(([a]) => a);
+      }
+
+      // Build stored genres from weighted list (frequency-based)
+      let storedGenres;
+      if (weightedGenres.length === 0) {
+        storedGenres = [...new Set(finishedEntries.flatMap(e => e.book.genres))].slice(0, 4);
+      } else {
+        const genreFreq = {};
+        weightedGenres.forEach(g => { genreFreq[g] = (genreFreq[g] || 0) + 1; });
+        storedGenres = Object.entries(genreFreq)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 4)
+          .map(([g]) => g);
+      }
 
       // Get subjects for each top author
       const authorSubjectBatches = await Promise.all(topAuthors.map(a => getAuthorTopSubjects(a)));

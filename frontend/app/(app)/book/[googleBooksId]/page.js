@@ -7,6 +7,65 @@ import { useParams } from 'next/navigation';
 import { BookOpen, Star, Calendar, Hash, ExternalLink, Plus, Check, Loader2, ChevronLeft } from 'lucide-react';
 import { books as booksApi, library as libraryApi } from '../../../../lib/api';
 
+async function fetchOpenLibraryBook(rawId) {
+  // rawId is like "OL_OL123456W" — strip the "OL_" prefix
+  const workId = rawId.replace(/^OL_/, '');
+  const workUrl = `https://openlibrary.org/works/${workId}.json`;
+
+  const workRes = await fetch(workUrl);
+  if (!workRes.ok) throw new Error('Open Library book not found.');
+  const work = await workRes.json();
+
+  // Fetch author name
+  let author = 'Unknown Author';
+  if (work.authors && work.authors.length > 0) {
+    const authorKey = work.authors[0].author?.key || work.authors[0].key;
+    if (authorKey) {
+      try {
+        const authorRes = await fetch(`https://openlibrary.org${authorKey}.json`);
+        if (authorRes.ok) {
+          const authorData = await authorRes.json();
+          author = authorData.name || authorData.personal_name || 'Unknown Author';
+        }
+      } catch {
+        // use default
+      }
+    }
+  }
+
+  // Cover URL
+  let coverUrl = null;
+  if (work.covers && work.covers.length > 0) {
+    coverUrl = `https://covers.openlibrary.org/b/id/${work.covers[0]}-M.jpg`;
+  }
+
+  // Description
+  let description = null;
+  if (work.description) {
+    description = typeof work.description === 'string' ? work.description : work.description.value || null;
+  }
+
+  // Genres from subjects
+  const genres = work.subjects ? work.subjects.slice(0, 5) : [];
+
+  const title = work.title || 'Unknown Title';
+  const buyLink = `https://www.google.com/search?q=${encodeURIComponent(title + ' ' + author + ' buy')}`;
+
+  return {
+    googleBooksId: rawId,
+    title,
+    author,
+    coverUrl,
+    description,
+    genres,
+    publishedDate: work.first_publish_date || null,
+    averageRating: null,
+    pageCount: null,
+    isbn: null,
+    buyLink,
+  };
+}
+
 export default function BookDetailPage() {
   const params = useParams();
   const googleBooksId = params.googleBooksId;
@@ -20,8 +79,14 @@ export default function BookDetailPage() {
   useEffect(() => {
     async function fetchBook() {
       try {
-        const data = await booksApi.getBook(googleBooksId);
-        setBook(data.book);
+        let bookData;
+        if (googleBooksId && googleBooksId.startsWith('OL_')) {
+          bookData = await fetchOpenLibraryBook(googleBooksId);
+        } else {
+          const data = await booksApi.getBook(googleBooksId);
+          bookData = data.book;
+        }
+        setBook(bookData);
       } catch (err) {
         setError(err.message || 'Failed to load book details.');
       } finally {
