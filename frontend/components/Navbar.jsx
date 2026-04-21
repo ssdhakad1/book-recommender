@@ -1,10 +1,8 @@
 'use client';
-
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, Library, TrendingUp, Search, LayoutDashboard, LogOut } from 'lucide-react';
+import { BookOpen, LogOut, LayoutDashboard, Library, TrendingUp, Search } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useRouter } from 'next/navigation';
 
 const NAV_LINKS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -14,64 +12,49 @@ const NAV_LINKS = [
 ];
 
 export default function Navbar() {
-  const { user, logout } = useAuth();
   const pathname = usePathname();
-  const router = useRouter();
-
-  const handleLogout = () => {
-    logout();
-    router.push('/');
-  };
+  const { user, logout } = useAuth();
 
   return (
-    <nav className="bg-slate-900 border-b border-slate-800 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+    <nav className="fixed top-0 left-0 right-0 z-40 h-16 border-b" style={{backgroundColor:'rgba(15,17,23,0.85)', backdropFilter:'blur(12px)', borderColor:'#2a2d3e'}}>
+      <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
         {/* Logo */}
-        <Link href="/dashboard" className="flex items-center gap-2 flex-shrink-0">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <BookOpen className="w-5 h-5 text-white" />
+        <Link href="/dashboard" className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center flex-shrink-0">
+            <BookOpen className="w-4 h-4 text-white" />
           </div>
-          <span className="text-white font-bold text-lg hidden sm:block">BookRecommender</span>
+          <span className="font-bold text-base" style={{color:'#f0f0f5'}}>BookRecommender</span>
         </Link>
 
         {/* Nav links */}
-        <div className="flex items-center gap-1">
-          {NAV_LINKS.map((link) => {
-            const Icon = link.icon;
-            const isActive = pathname === link.href;
+        <div className="hidden md:flex items-center gap-1">
+          {NAV_LINKS.map(({ href, label, icon: Icon }) => {
+            const active = pathname === href;
             return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-blue-600/20 text-blue-400'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                }`}
-              >
+              <Link key={href} href={href} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all relative ${active ? 'text-indigo-400' : 'hover:bg-[#1a1d27]'}`} style={{color: active ? '#818cf8' : '#8b8fa8'}}>
                 <Icon className="w-4 h-4" />
-                <span className="hidden md:block">{link.label}</span>
+                {label}
+                {active && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 rounded-full" />}
               </Link>
             );
           })}
         </div>
 
-        {/* User + logout */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {user && (
-            <span className="text-slate-300 text-sm hidden lg:block truncate max-w-[120px]" title={user.name}>
-              {user.name}
-            </span>
-          )}
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors"
-            title="Sign out"
-          >
-            <LogOut className="w-4 h-4" />
-            <span className="hidden sm:block">Sign out</span>
-          </button>
-        </div>
+        {/* User */}
+        {user && (
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center flex-shrink-0">
+                <span className="text-indigo-400 text-sm font-bold">{user.name?.[0]?.toUpperCase() || 'U'}</span>
+              </div>
+              <span className="hidden md:block text-sm font-medium max-w-[120px] truncate" style={{color:'#f0f0f5'}}>{user.name}</span>
+            </div>
+            <button onClick={logout} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all hover:bg-[#1a1d27]" style={{color:'#8b8fa8'}} title="Sign out">
+              <LogOut className="w-4 h-4" />
+              <span className="hidden md:block">Sign out</span>
+            </button>
+          </div>
+        )}
       </div>
     </nav>
   );

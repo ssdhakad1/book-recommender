@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { BookOpen, Eye, EyeOff } from 'lucide-react';
+import { BookOpen, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 
 export default function LoginPage() {
@@ -32,31 +32,33 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#0f1117] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-              <BookOpen className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-xl font-bold text-white">BookRecommender</span>
-          </Link>
-          <h1 className="text-2xl font-bold text-white mt-6 mb-1">Welcome back</h1>
-          <p className="text-slate-400">Sign in to your account</p>
-        </div>
+        {/* Card */}
+        <div className="bg-[#1a1d27] rounded-2xl border border-[#2a2d3e] shadow-2xl p-8">
+          {/* Logo */}
+          <div className="text-center mb-8">
+            <Link href="/" className="inline-flex items-center gap-2.5 mb-6">
+              <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-md shadow-indigo-900/40">
+                <BookOpen className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-xl font-bold text-[#f0f0f5] tracking-tight">BookRecommender</span>
+            </Link>
+            <h1 className="text-2xl font-bold text-[#f0f0f5] tracking-tight">Welcome back</h1>
+            <p className="text-[#8b8fa8] text-sm mt-1">Sign in to your account to continue</p>
+          </div>
 
-        {/* Form */}
-        <div className="bg-slate-800 rounded-2xl p-8 border border-slate-700 shadow-xl">
+          {/* Error banner */}
           {error && (
-            <div className="bg-red-900/30 border border-red-700 text-red-400 px-4 py-3 rounded-lg mb-6 text-sm">
-              {error}
+            <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl mb-6 text-sm">
+              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-1.5">
+              <label htmlFor="email" className="block text-sm font-medium text-[#8b8fa8] mb-1.5">
                 Email address
               </label>
               <input
@@ -67,12 +69,12 @@ export default function LoginPage() {
                 required
                 autoComplete="email"
                 placeholder="you@example.com"
-                className="w-full bg-slate-900 border border-slate-600 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-slate-500 transition"
+                className="w-full bg-[#0f1117] border border-[#2a2d3e] focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl px-4 py-3 text-[#f0f0f5] placeholder-[#4a4d62] outline-none transition-all text-sm"
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-1.5">
+              <label htmlFor="password" className="block text-sm font-medium text-[#8b8fa8] mb-1.5">
                 Password
               </label>
               <div className="relative">
@@ -84,14 +86,15 @@ export default function LoginPage() {
                   required
                   autoComplete="current-password"
                   placeholder="••••••••"
-                  className="w-full bg-slate-900 border border-slate-600 text-white rounded-lg px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-slate-500 transition"
+                  className="w-full bg-[#0f1117] border border-[#2a2d3e] focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl px-4 py-3 pr-12 text-[#f0f0f5] placeholder-[#4a4d62] outline-none transition-all text-sm"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4a4d62] hover:text-[#8b8fa8] transition-colors p-0.5"
+                  tabIndex={-1}
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
                 </button>
               </div>
             </div>
@@ -99,7 +102,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+              className="w-full bg-indigo-500 hover:bg-indigo-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-2 mt-2"
             >
               {loading ? (
                 <>
@@ -113,9 +116,9 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <p className="text-center text-slate-400 mt-6">
+        <p className="text-center text-[#8b8fa8] text-sm mt-6">
           Don&apos;t have an account?{' '}
-          <Link href="/register" className="text-blue-400 hover:text-blue-300 font-medium transition">
+          <Link href="/register" className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
             Create one for free
           </Link>
         </p>

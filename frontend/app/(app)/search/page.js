@@ -1,9 +1,22 @@
 'use client';
 
-import { useState } from 'react';
-import { Search, Loader2, BookOpen } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, BookOpen } from 'lucide-react';
 import { books as booksApi, library as libraryApi } from '../../../lib/api';
 import BookCard from '../../../components/BookCard';
+
+function SkeletonCard() {
+  return (
+    <div className="rounded-2xl border overflow-hidden animate-pulse" style={{backgroundColor:'#1a1d27', borderColor:'#2a2d3e'}}>
+      <div className="aspect-[2/3] w-full" style={{backgroundColor:'#2a2d3e'}} />
+      <div className="p-3.5 space-y-2">
+        <div className="h-3 rounded" style={{backgroundColor:'#2a2d3e', width:'80%'}} />
+        <div className="h-2.5 rounded" style={{backgroundColor:'#2a2d3e', width:'60%'}} />
+        <div className="h-8 rounded-xl mt-3" style={{backgroundColor:'#2a2d3e'}} />
+      </div>
+    </div>
+  );
+}
 
 export default function SearchPage() {
   const [query, setQuery] = useState('');
@@ -12,6 +25,24 @@ export default function SearchPage() {
   const [error, setError] = useState('');
   const [searched, setSearched] = useState(false);
   const [libraryBookIds, setLibraryBookIds] = useState(new Set());
+
+  // Fetch library on mount so we can show "In Library" state
+  useEffect(() => {
+    async function loadLibrary() {
+      try {
+        const data = await libraryApi.getLibrary();
+        const ids = new Set(
+          (data.entries || [])
+            .map((e) => e.book?.googleBooksId)
+            .filter(Boolean)
+        );
+        setLibraryBookIds(ids);
+      } catch {
+        // Non-critical
+      }
+    }
+    loadLibrary();
+  }, []);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -48,36 +79,41 @@ export default function SearchPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 pb-16">
+    <div className="min-h-screen pb-16" style={{backgroundColor:'#0f1117'}}>
       <div className="max-w-6xl mx-auto px-4 py-8">
+
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white flex items-center gap-2">
-            <Search className="w-8 h-8 text-blue-400" />
-            Search Books
-          </h1>
-          <p className="text-slate-400 mt-1">Find any book and add it to your library</p>
+          <div className="flex items-center gap-3 mb-1">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{backgroundColor:'rgba(99,102,241,0.1)'}}>
+              <Search className="w-5 h-5 text-indigo-400" />
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight" style={{color:'#f0f0f5'}}>Search Books</h1>
+          </div>
+          <p className="text-sm ml-12" style={{color:'#8b8fa8'}}>Find any book and add it to your library</p>
         </div>
 
         {/* Search form */}
         <form onSubmit={handleSearch} className="mb-8">
           <div className="flex gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5" style={{color:'#4a4d62'}} />
               <input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search by title, author, ISBN..."
-                className="w-full bg-slate-800 border border-slate-600 text-white rounded-xl pl-12 pr-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-slate-500 text-base"
+                className="w-full border rounded-xl pl-12 pr-4 py-3.5 text-base outline-none transition-all focus:border-indigo-500"
+                style={{backgroundColor:'#1a1d27', borderColor:'#2a2d3e', color:'#f0f0f5'}}
               />
             </div>
             <button
               type="submit"
               disabled={loading || !query.trim()}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors flex items-center gap-2"
+              className="px-6 py-3 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-all flex items-center gap-2"
+              style={loading || !query.trim() ? {backgroundColor:'#2a2d3e', color:'#4a4d62'} : {}}
             >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+              <Search className="w-4 h-4" />
               Search
             </button>
           </div>
@@ -85,26 +121,27 @@ export default function SearchPage() {
 
         {/* Error */}
         {error && (
-          <div className="bg-red-900/30 border border-red-700 text-red-400 px-4 py-3 rounded-lg mb-6 text-sm">
+          <div className="border text-red-400 px-4 py-3 rounded-xl mb-6 text-sm" style={{backgroundColor:'rgba(239,68,68,0.1)', borderColor:'rgba(239,68,68,0.3)'}}>
             {error}
           </div>
         )}
 
-        {/* Loading */}
+        {/* Loading skeletons */}
         {loading && (
-          <div className="text-center py-16">
-            <Loader2 className="w-10 h-10 text-blue-400 animate-spin mx-auto mb-4" />
-            <p className="text-slate-400">Searching books...</p>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
           </div>
         )}
 
         {/* Results */}
         {!loading && results.length > 0 && (
           <div>
-            <p className="text-slate-400 text-sm mb-5">
+            <p className="text-sm mb-5" style={{color:'#8b8fa8'}}>
               Found {results.length} results for &quot;{query}&quot;
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {results.map((book) => (
                 <BookCard
                   key={book.googleBooksId || book.title}
@@ -119,18 +156,21 @@ export default function SearchPage() {
 
         {/* No results */}
         {!loading && searched && results.length === 0 && !error && (
-          <div className="text-center py-16 text-slate-500">
-            <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-30" />
-            <p className="text-lg">No results found for &quot;{query}&quot;</p>
-            <p className="text-sm mt-1">Try a different search term</p>
+          <div className="text-center py-20">
+            <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-30" style={{color:'#4a4d62'}} />
+            <p className="text-lg" style={{color:'#8b8fa8'}}>No results found for &quot;{query}&quot;</p>
+            <p className="text-sm mt-1" style={{color:'#4a4d62'}}>Try a different search term</p>
           </div>
         )}
 
-        {/* Initial state */}
+        {/* Initial idle state */}
         {!loading && !searched && (
-          <div className="text-center py-16 text-slate-600">
-            <Search className="w-12 h-12 mx-auto mb-4 opacity-30" />
-            <p className="text-lg">Start typing to search for books</p>
+          <div className="text-center py-20">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{backgroundColor:'rgba(99,102,241,0.1)'}}>
+              <Search className="w-8 h-8" style={{color:'rgba(99,102,241,0.5)'}} />
+            </div>
+            <p className="text-base" style={{color:'#8b8fa8'}}>Search for books by title, author, or ISBN</p>
+            <p className="text-sm mt-1" style={{color:'#4a4d62'}}>Your results will appear here</p>
           </div>
         )}
       </div>

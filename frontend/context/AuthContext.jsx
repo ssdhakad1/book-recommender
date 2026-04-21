@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { auth } from '../lib/api';
 import { setToken, getToken, removeToken, isLoggedIn } from '../lib/auth';
 
@@ -9,6 +10,7 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   const fetchUser = useCallback(async () => {
     try {
@@ -47,6 +49,7 @@ export function AuthProvider({ children }) {
   const logout = () => {
     removeToken();
     setUser(null);
+    router.push('/');
   };
 
   return (

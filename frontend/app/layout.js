@@ -3,16 +3,18 @@ import { AuthProvider } from '../context/AuthContext';
 import NavbarWrapper from '../components/NavbarWrapper';
 
 export const metadata = {
-  title: 'Book Recommender — Your reading life, intelligently connected',
+  title: 'BookRecommender — Your reading life, intelligently connected',
   description: 'Get AI-powered book recommendations based on your taste, mood, and reading history.',
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen bg-slate-900 text-slate-100">
+    <html lang="en" style={{ backgroundColor: '#0f1117' }}>
+      <body className="min-h-screen bg-[#0f1117] text-[#f0f0f5] antialiased">
         <AuthProvider>
           <NavbarWrapper />
+          {/* Spacer so content is not hidden behind fixed navbar */}
+          <div id="navbar-spacer" />
           <main>{children}</main>
         </AuthProvider>
       </body>

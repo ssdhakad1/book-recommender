@@ -1,190 +1,136 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { TrendingUp, BookOpen, Loader2, Plus, Check } from 'lucide-react';
+import { TrendingUp, BookOpen } from 'lucide-react';
 import { trending as trendingApi, library as libraryApi } from '../../../lib/api';
+import BookCard from '../../../components/BookCard';
+
+function SkeletonCard() {
+  return (
+    <div className="rounded-2xl border overflow-hidden animate-pulse" style={{backgroundColor:'#1a1d27', borderColor:'#2a2d3e'}}>
+      <div className="aspect-[2/3] w-full" style={{backgroundColor:'#2a2d3e'}} />
+      <div className="p-3.5 space-y-2">
+        <div className="h-3 rounded" style={{backgroundColor:'#2a2d3e', width:'80%'}} />
+        <div className="h-2.5 rounded" style={{backgroundColor:'#2a2d3e', width:'60%'}} />
+        <div className="h-8 rounded-xl mt-3" style={{backgroundColor:'#2a2d3e'}} />
+      </div>
+    </div>
+  );
+}
 
 export default function TrendingPage() {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [addedBooks, setAddedBooks] = useState(new Set());
-  const [addingBook, setAddingBook] = useState(null);
+  const [libraryBookIds, setLibraryBookIds] = useState(new Set());
 
   useEffect(() => {
-    async function fetchTrending() {
+    async function fetchData() {
       try {
-        const data = await trendingApi.getTrending();
-        setBooks(data.books || []);
-      } catch (err) {
-        setError(err.message || 'Failed to load trending books.');
+        const [trendingData, libraryData] = await Promise.allSettled([
+          trendingApi.getTrending(),
+          libraryApi.getLibrary(),
+        ]);
+
+        if (trendingData.status === 'fulfilled') {
+          setBooks(trendingData.value.books || []);
+        } else {
+          setError(trendingData.reason?.message || 'Failed to load trending books.');
+        }
+
+        if (libraryData.status === 'fulfilled') {
+          const ids = new Set(
+            (libraryData.value.entries || [])
+              .map((e) => e.book?.googleBooksId)
+              .filter(Boolean)
+          );
+          setLibraryBookIds(ids);
+        }
       } finally {
         setLoading(false);
       }
     }
-    fetchTrending();
+    fetchData();
   }, []);
 
   const handleAddToLibrary = async (book) => {
-    const key = book.googleBooksId || book.title;
-    setAddingBook(key);
     try {
       await libraryApi.addToLibrary(book);
-      setAddedBooks((prev) => new Set([...prev, key]));
-    } catch (err) {
-      if (err.message?.includes('already')) {
-        setAddedBooks((prev) => new Set([...prev, key]));
+      if (book.googleBooksId) {
+        setLibraryBookIds((prev) => new Set([...prev, book.googleBooksId]));
       }
-    } finally {
-      setAddingBook(null);
+    } catch (err) {
+      if (err.message?.includes('already') && book.googleBooksId) {
+        setLibraryBookIds((prev) => new Set([...prev, book.googleBooksId]));
+      }
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-900 pb-16">
-        <div className="max-w-5xl mx-auto px-4 py-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white flex items-center gap-2">
-              <TrendingUp className="w-8 h-8 text-blue-400" />
-              Trending Books
-            </h1>
-            <p className="text-slate-400 mt-1">Top 50 most popular books right now</p>
-          </div>
-
-          <div className="space-y-3">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <div key={i} className="bg-slate-800 rounded-xl p-4 border border-slate-700 flex gap-4 animate-pulse">
-                <div className="skeleton w-8 h-6 rounded" />
-                <div className="skeleton w-14 h-20 rounded" />
-                <div className="flex-1 space-y-2 pt-1">
-                  <div className="skeleton h-5 w-48 rounded" />
-                  <div className="skeleton h-4 w-32 rounded" />
-                  <div className="skeleton h-4 w-64 rounded" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-slate-900 pb-16">
-      <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="min-h-screen pb-16" style={{backgroundColor:'#0f1117'}}>
+      <div className="max-w-7xl mx-auto px-4 py-8">
+
+        {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white flex items-center gap-2">
-            <TrendingUp className="w-8 h-8 text-blue-400" />
-            Trending Books
-          </h1>
-          <p className="text-slate-400 mt-1">Top 50 most popular books right now</p>
+          <div className="flex items-center gap-3 mb-1">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{backgroundColor:'rgba(99,102,241,0.1)'}}>
+              <TrendingUp className="w-5 h-5 text-indigo-400" />
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight" style={{color:'#f0f0f5'}}>Top 50 Trending</h1>
+          </div>
+          <p className="text-sm ml-12" style={{color:'#8b8fa8'}}>Updated daily — discover what the reading community is engaging with</p>
         </div>
 
         {error && (
-          <div className="bg-red-900/30 border border-red-700 text-red-400 px-4 py-3 rounded-lg mb-6 text-sm">
+          <div className="border text-red-400 px-4 py-3 rounded-xl mb-6 text-sm" style={{backgroundColor:'rgba(239,68,68,0.1)', borderColor:'rgba(239,68,68,0.3)'}}>
             {error}
           </div>
         )}
 
-        <div className="space-y-3">
-          {books.map((book, index) => {
-            const key = book.googleBooksId || book.title;
-            const isAdded = addedBooks.has(key);
-            const isAdding = addingBook === key;
+        {/* Loading skeletons */}
+        {loading && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </div>
+        )}
 
-            return (
-              <div
-                key={`${key}-${index}`}
-                className="bg-slate-800 rounded-xl p-4 border border-slate-700 flex gap-4 hover:border-slate-600 transition-colors"
-              >
-                {/* Rank */}
-                <div className="flex-shrink-0 w-8 pt-1">
-                  <span className={`text-lg font-bold ${index < 3 ? 'text-yellow-400' : 'text-slate-500'}`}>
-                    {book.rank || index + 1}
-                  </span>
-                </div>
-
-                {/* Cover */}
-                <div className="flex-shrink-0 w-14 h-20 bg-slate-700 rounded overflow-hidden">
-                  {book.coverUrl ? (
-                    <Image
-                      src={book.coverUrl}
-                      alt={book.title}
-                      width={56}
-                      height={80}
-                      className="w-full h-full object-cover"
-                      unoptimized
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <BookOpen className="w-6 h-6 text-slate-500" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Details */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      {book.googleBooksId ? (
-                        <Link
-                          href={`/book/${book.googleBooksId}`}
-                          className="text-white font-semibold hover:text-blue-400 transition-colors"
-                        >
-                          {book.title}
-                        </Link>
-                      ) : (
-                        <span className="text-white font-semibold">{book.title}</span>
-                      )}
-                      <p className="text-slate-400 text-sm mt-0.5">{book.author}</p>
-
-                      {/* Genres */}
-                      {book.genres && book.genres.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mt-2">
-                          {book.genres.slice(0, 3).map((genre) => (
-                            <span
-                              key={genre}
-                              className="text-xs px-2 py-0.5 bg-slate-700 text-slate-300 rounded-full"
-                            >
-                              {genre}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Description */}
-                      {book.description && (
-                        <p className="text-slate-400 text-sm mt-2 line-clamp-2">{book.description}</p>
-                      )}
-                    </div>
-
-                    <button
-                      onClick={() => handleAddToLibrary(book)}
-                      disabled={isAdded || isAdding}
-                      className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                        isAdded
-                          ? 'bg-green-900/30 text-green-400 border border-green-800 cursor-default'
-                          : 'bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-50'
-                      }`}
-                    >
-                      {isAdding ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : isAdded ? (
-                        <Check className="w-3.5 h-3.5" />
-                      ) : (
-                        <Plus className="w-3.5 h-3.5" />
-                      )}
-                      {isAdded ? 'Added' : 'Add'}
-                    </button>
+        {/* Books grid */}
+        {!loading && books.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {books.map((book, index) => {
+              const rank = book.rank || index + 1;
+              return (
+                <div key={`${book.googleBooksId || book.title}-${index}`} className="relative">
+                  {/* Rank badge */}
+                  <div
+                    className="absolute top-2 left-2 z-10 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
+                    style={rank <= 3
+                      ? {backgroundColor:'#f59e0b', color:'#0f1117'}
+                      : {backgroundColor:'rgba(99,102,241,0.9)', color:'white'}
+                    }
+                  >
+                    {rank}
                   </div>
+                  <BookCard
+                    book={book}
+                    onAddToLibrary={handleAddToLibrary}
+                    isInLibrary={book.googleBooksId ? libraryBookIds.has(book.googleBooksId) : false}
+                  />
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!loading && books.length === 0 && !error && (
+          <div className="text-center py-20">
+            <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-30" style={{color:'#4a4d62'}} />
+            <p className="text-base" style={{color:'#8b8fa8'}}>No trending books available right now.</p>
+          </div>
+        )}
       </div>
     </div>
   );

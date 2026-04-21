@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { BookOpen, Star, Calendar, Hash, ExternalLink, Plus, Check, Loader2, ChevronLeft } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { BookOpen, Star, Calendar, Hash, ExternalLink, Plus, Check, ChevronLeft, FileText } from 'lucide-react';
 import { books as booksApi, library as libraryApi } from '../../../../lib/api';
 
 async function fetchOpenLibraryBook(rawId) {
@@ -68,6 +68,7 @@ async function fetchOpenLibraryBook(rawId) {
 
 export default function BookDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const googleBooksId = params.googleBooksId;
 
   const [book, setBook] = useState(null);
@@ -87,6 +88,16 @@ export default function BookDetailPage() {
           bookData = data.book;
         }
         setBook(bookData);
+
+        // Check if already in library
+        try {
+          const libData = await libraryApi.getLibrary();
+          const entries = libData.entries || [];
+          const found = entries.some((e) => e.book?.googleBooksId === bookData.googleBooksId);
+          setIsInLibrary(found);
+        } catch {
+          // Non-critical
+        }
       } catch (err) {
         setError(err.message || 'Failed to load book details.');
       } finally {
@@ -113,18 +124,18 @@ export default function BookDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <Loader2 className="w-10 h-10 text-blue-400 animate-spin" />
+      <div className="min-h-screen flex items-center justify-center" style={{backgroundColor:'#0f1117'}}>
+        <div className="w-10 h-10 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
       </div>
     );
   }
 
   if (error || !book) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{backgroundColor:'#0f1117'}}>
         <div className="text-center">
           <p className="text-red-400 mb-4">{error || 'Book not found.'}</p>
-          <Link href="/search" className="text-blue-400 hover:underline">
+          <Link href="/search" className="text-indigo-400 hover:text-indigo-300 transition-colors">
             Back to Search
           </Link>
         </div>
@@ -135,104 +146,129 @@ export default function BookDetailPage() {
   const stars = book.averageRating ? Math.round(book.averageRating) : 0;
 
   return (
-    <div className="min-h-screen bg-slate-900 pb-16">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Back link */}
-        <Link
-          href="/search"
-          className="inline-flex items-center gap-1 text-slate-400 hover:text-white transition-colors mb-8 text-sm"
+    <div className="min-h-screen pb-16" style={{backgroundColor:'#0f1117'}}>
+      <div className="max-w-5xl mx-auto px-4 py-8">
+
+        {/* Back button */}
+        <button
+          onClick={() => router.back()}
+          className="inline-flex items-center gap-1.5 text-sm mb-8 transition-colors hover:text-indigo-400"
+          style={{color:'#8b8fa8'}}
         >
           <ChevronLeft className="w-4 h-4" />
-          Back to Search
-        </Link>
+          Back
+        </button>
 
+        {/* Two column layout */}
         <div className="flex flex-col md:flex-row gap-8">
-          {/* Cover */}
-          <div className="flex-shrink-0">
-            <div className="w-48 h-72 bg-slate-800 rounded-xl overflow-hidden shadow-2xl mx-auto md:mx-0 border border-slate-700">
+
+          {/* Left column: cover + metadata */}
+          <div className="flex-shrink-0 md:w-64">
+            {/* Cover */}
+            <div className="w-full max-w-[200px] mx-auto md:mx-0 rounded-2xl overflow-hidden shadow-2xl border mb-6" style={{borderColor:'#2a2d3e', aspectRatio:'2/3', position:'relative'}}>
               {book.coverUrl ? (
                 <Image
                   src={book.coverUrl}
                   alt={book.title}
-                  width={192}
-                  height={288}
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
                   unoptimized
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <BookOpen className="w-16 h-16 text-slate-500" />
+                <div className="absolute inset-0 flex items-center justify-center" style={{backgroundColor:'#1a1d27'}}>
+                  <BookOpen className="w-16 h-16" style={{color:'#2a2d3e'}} />
+                </div>
+              )}
+            </div>
+
+            {/* Metadata boxes */}
+            <div className="space-y-2">
+              {book.publishedDate && (
+                <div className="rounded-xl border p-3 flex items-center gap-2.5" style={{backgroundColor:'#1a1d27', borderColor:'#2a2d3e'}}>
+                  <Calendar className="w-4 h-4 flex-shrink-0" style={{color:'#4a4d62'}} />
+                  <div>
+                    <p className="text-xs" style={{color:'#4a4d62'}}>Published</p>
+                    <p className="text-sm font-medium" style={{color:'#f0f0f5'}}>{book.publishedDate}</p>
+                  </div>
+                </div>
+              )}
+              {book.pageCount && (
+                <div className="rounded-xl border p-3 flex items-center gap-2.5" style={{backgroundColor:'#1a1d27', borderColor:'#2a2d3e'}}>
+                  <FileText className="w-4 h-4 flex-shrink-0" style={{color:'#4a4d62'}} />
+                  <div>
+                    <p className="text-xs" style={{color:'#4a4d62'}}>Pages</p>
+                    <p className="text-sm font-medium" style={{color:'#f0f0f5'}}>{book.pageCount}</p>
+                  </div>
+                </div>
+              )}
+              {book.isbn && (
+                <div className="rounded-xl border p-3 flex items-center gap-2.5" style={{backgroundColor:'#1a1d27', borderColor:'#2a2d3e'}}>
+                  <Hash className="w-4 h-4 flex-shrink-0" style={{color:'#4a4d62'}} />
+                  <div>
+                    <p className="text-xs" style={{color:'#4a4d62'}}>ISBN</p>
+                    <p className="text-sm font-medium" style={{color:'#f0f0f5'}}>{book.isbn}</p>
+                  </div>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Details */}
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold text-white leading-tight mb-2">{book.title}</h1>
-            <p className="text-xl text-slate-300 mb-4">{book.author}</p>
+          {/* Right column: details */}
+          <div className="flex-1 min-w-0">
+            <h1 className="text-3xl font-bold leading-tight mb-2" style={{color:'#f0f0f5'}}>{book.title}</h1>
+            <p className="text-xl mb-4" style={{color:'#8b8fa8'}}>{book.author}</p>
 
-            {/* Rating */}
+            {/* Star rating */}
             {book.averageRating && (
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 mb-5">
                 <div className="flex gap-0.5">
                   {[1, 2, 3, 4, 5].map((s) => (
                     <Star
                       key={s}
-                      className={`w-5 h-5 ${s <= stars ? 'text-yellow-400 fill-yellow-400' : 'text-slate-600'}`}
+                      className={`w-5 h-5 ${s <= stars ? 'text-amber-400 fill-amber-400' : ''}`}
+                      style={s > stars ? {color:'#2a2d3e'} : {}}
                     />
                   ))}
                 </div>
-                <span className="text-slate-400 text-sm">{book.averageRating.toFixed(1)}/5</span>
+                <span className="text-sm" style={{color:'#8b8fa8'}}>{book.averageRating.toFixed(1)}/5</span>
               </div>
             )}
 
-            {/* Genres */}
+            {/* Genre pills */}
             {book.genres && book.genres.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-5">
+              <div className="flex flex-wrap gap-2 mb-6">
                 {book.genres.map((genre) => (
-                  <span key={genre} className="text-sm px-3 py-1 bg-blue-900/30 text-blue-300 rounded-full border border-blue-800/50">
+                  <span
+                    key={genre}
+                    className="text-sm px-3 py-1 rounded-full border"
+                    style={{backgroundColor:'rgba(99,102,241,0.1)', color:'#818cf8', borderColor:'rgba(99,102,241,0.3)'}}
+                  >
                     {genre}
                   </span>
                 ))}
               </div>
             )}
 
-            {/* Meta info */}
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              {book.publishedDate && (
-                <div className="flex items-center gap-2 text-slate-400 text-sm">
-                  <Calendar className="w-4 h-4" />
-                  <span>{book.publishedDate}</span>
-                </div>
-              )}
-              {book.pageCount && (
-                <div className="flex items-center gap-2 text-slate-400 text-sm">
-                  <BookOpen className="w-4 h-4" />
-                  <span>{book.pageCount} pages</span>
-                </div>
-              )}
-              {book.isbn && (
-                <div className="flex items-center gap-2 text-slate-400 text-sm">
-                  <Hash className="w-4 h-4" />
-                  <span>ISBN: {book.isbn}</span>
-                </div>
-              )}
-            </div>
+            {/* Description */}
+            {book.description && (
+              <div className="mb-6">
+                <h2 className="text-sm font-semibold uppercase tracking-wider mb-3" style={{color:'#4a4d62'}}>About this book</h2>
+                <p className="leading-relaxed text-sm" style={{color:'#8b8fa8'}}>{book.description}</p>
+              </div>
+            )}
 
             {/* Action buttons */}
             <div className="flex gap-3 flex-wrap">
               <button
                 onClick={handleAddToLibrary}
                 disabled={isInLibrary || addingToLibrary}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-colors ${
-                  isInLibrary
-                    ? 'bg-green-900/30 text-green-400 border border-green-800 cursor-default'
-                    : 'bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-60'
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all ${
+                  isInLibrary ? 'border cursor-default' : 'bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-60'
                 }`}
+                style={isInLibrary ? {backgroundColor:'rgba(34,197,94,0.1)', borderColor:'rgba(34,197,94,0.3)', color:'#22c55e'} : {}}
               >
                 {addingToLibrary ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : isInLibrary ? (
                   <Check className="w-4 h-4" />
                 ) : (
@@ -246,7 +282,10 @@ export default function BookDetailPage() {
                   href={book.buyLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-medium transition-colors border border-slate-600"
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all border"
+                  style={{backgroundColor:'transparent', borderColor:'#2a2d3e', color:'#8b8fa8'}}
+                  onMouseEnter={e => e.currentTarget.style.backgroundColor='#1a1d27'}
+                  onMouseLeave={e => e.currentTarget.style.backgroundColor='transparent'}
                 >
                   <ExternalLink className="w-4 h-4" />
                   Buy / Find
@@ -255,14 +294,6 @@ export default function BookDetailPage() {
             </div>
           </div>
         </div>
-
-        {/* Description */}
-        {book.description && (
-          <div className="mt-8 bg-slate-800 rounded-xl p-6 border border-slate-700">
-            <h2 className="text-lg font-semibold text-white mb-3">About this book</h2>
-            <p className="text-slate-300 leading-relaxed">{book.description}</p>
-          </div>
-        )}
       </div>
     </div>
   );

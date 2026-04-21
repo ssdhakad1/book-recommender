@@ -13,5 +13,6 @@ export default function AppLayout({ children }) {
     }
   }, [router]);
 
-  return <>{children}</>;
+  // Add top padding to account for the fixed navbar (h-16 = 64px)
+  return <div className="pt-16">{children}</div>;
 }

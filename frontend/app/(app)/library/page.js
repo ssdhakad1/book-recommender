@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Library, Trash2, BookOpen, Loader2, Star, Eye, Pencil } from 'lucide-react';
+import { Library, Trash2, BookOpen, Loader2, Star, Eye, Pencil, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { library as libraryApi } from '../../../lib/api';
 import ReviewModal from '../../../components/ReviewModal';
 import ReviewViewModal from '../../../components/ReviewViewModal';
@@ -30,7 +30,7 @@ function StarDisplay({ rating, size = 'sm' }) {
       {[1, 2, 3, 4, 5].map((s) => (
         <Star
           key={s}
-          className={`${cls} ${s <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-slate-600'}`}
+          className={`${cls} ${s <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-[#2a2d3e]'}`}
         />
       ))}
     </div>
@@ -39,9 +39,11 @@ function StarDisplay({ rating, size = 'sm' }) {
 
 function SortIcon({ column, sortConfig }) {
   if (sortConfig.key !== column) {
-    return <span className="ml-1 opacity-40">↕</span>;
+    return <ArrowUpDown className="w-3.5 h-3.5 ml-1 opacity-40 inline" />;
   }
-  return <span className="ml-1">{sortConfig.dir === 'asc' ? '↑' : '↓'}</span>;
+  return sortConfig.dir === 'asc'
+    ? <ArrowUp className="w-3.5 h-3.5 ml-1 inline" />
+    : <ArrowDown className="w-3.5 h-3.5 ml-1 inline" />;
 }
 
 export default function LibraryPage() {
@@ -178,48 +180,68 @@ export default function LibraryPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{backgroundColor:'#0f1117'}}>
         <div className="text-center">
-          <Loader2 className="w-10 h-10 text-blue-400 animate-spin mx-auto mb-3" />
-          <p className="text-slate-400">Loading your library...</p>
+          <div className="w-10 h-10 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mx-auto mb-3" />
+          <p style={{color:'#8b8fa8'}}>Loading your library...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 pb-16">
+    <div className="min-h-screen pb-16" style={{backgroundColor:'#0f1117'}}>
       <div className="max-w-7xl mx-auto px-4 py-8">
 
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white flex items-center gap-2">
-            <Library className="w-8 h-8 text-blue-400" />
-            My Library
-          </h1>
-          <p className="text-slate-400 mt-1">{entries.length} books in your collection</p>
+          <div className="flex items-center gap-3 mb-1">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{backgroundColor:'rgba(99,102,241,0.1)'}}>
+              <Library className="w-5 h-5 text-indigo-400" />
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight" style={{color:'#f0f0f5'}}>My Library</h1>
+          </div>
+          <p className="text-sm ml-12" style={{color:'#8b8fa8'}}>{entries.length} books in your collection</p>
+        </div>
+
+        {/* Stat cards */}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <div className="rounded-2xl border p-4" style={{backgroundColor:'#1a1d27', borderColor:'#2a2d3e'}}>
+            <p className="text-xs font-medium mb-1" style={{color:'#4a4d62'}}>WISHLIST</p>
+            <p className="text-2xl font-bold" style={{color:'#f0f0f5'}}>{counts.WISHLIST}</p>
+          </div>
+          <div className="rounded-2xl border p-4" style={{backgroundColor:'#1a1d27', borderColor:'#2a2d3e'}}>
+            <p className="text-xs font-medium mb-1" style={{color:'#4a4d62'}}>READING</p>
+            <p className="text-2xl font-bold text-indigo-400">{counts.READING}</p>
+          </div>
+          <div className="rounded-2xl border p-4" style={{backgroundColor:'#1a1d27', borderColor:'#2a2d3e'}}>
+            <p className="text-xs font-medium mb-1" style={{color:'#4a4d62'}}>FINISHED</p>
+            <p className="text-2xl font-bold text-green-400">{counts.FINISHED}</p>
+          </div>
         </div>
 
         {error && (
-          <div className="bg-red-900/30 border border-red-700 text-red-400 px-4 py-3 rounded-lg mb-6 text-sm">
+          <div className="border text-red-400 px-4 py-3 rounded-xl mb-6 text-sm" style={{backgroundColor:'rgba(239,68,68,0.1)', borderColor:'rgba(239,68,68,0.3)'}}>
             {error}
           </div>
         )}
 
         {/* Filter tabs */}
-        <div className="flex gap-2 mb-6 flex-wrap">
+        <div className="flex gap-1.5 p-1.5 rounded-2xl mb-6 w-fit border flex-wrap" style={{backgroundColor:'#1a1d27', borderColor:'#2a2d3e'}}>
           {FILTERS.map((f) => (
             <button
               key={f.id}
               onClick={() => setFilter(f.id)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all ${
                 filter === f.id
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700'
+                  ? 'bg-indigo-500 text-white shadow-sm'
+                  : 'hover:bg-[#2a2d3e]'
               }`}
+              style={filter === f.id ? {} : {color:'#8b8fa8'}}
             >
               {f.label}
-              <span className={`text-xs px-1.5 py-0.5 rounded-full ${filter === f.id ? 'bg-blue-500/50' : 'bg-slate-700'}`}>
+              <span className={`text-xs px-1.5 py-0.5 rounded-full ${filter === f.id ? 'bg-indigo-400/30' : ''}`}
+                style={filter === f.id ? {} : {backgroundColor:'#2a2d3e', color:'#8b8fa8'}}>
                 {counts[f.id]}
               </span>
             </button>
@@ -228,67 +250,71 @@ export default function LibraryPage() {
 
         {/* Table */}
         {filteredEntries.length === 0 ? (
-          <div className="text-center py-20 text-slate-500">
+          <div className="text-center py-20" style={{color:'#4a4d62'}}>
             <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-30" />
-            <p className="text-lg">
+            <p className="text-lg" style={{color:'#8b8fa8'}}>
               {filter === 'ALL' ? 'Your library is empty' : `No books in ${STATUS_LABELS[filter] || filter}`}
             </p>
-            <p className="text-sm mt-2">
-              <Link href="/search" className="text-blue-400 hover:underline">Search for books</Link> or browse{' '}
-              <Link href="/trending" className="text-blue-400 hover:underline">trending titles</Link> to add some.
+            <p className="text-sm mt-2" style={{color:'#4a4d62'}}>
+              <Link href="/search" className="text-indigo-400 hover:text-indigo-300">Search for books</Link> or browse{' '}
+              <Link href="/trending" className="text-indigo-400 hover:text-indigo-300">trending titles</Link> to add some.
             </p>
           </div>
         ) : (
-          <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+          <div className="rounded-2xl border overflow-hidden" style={{backgroundColor:'#1a1d27', borderColor:'#2a2d3e'}}>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-slate-700 bg-slate-800/80">
-                    <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3 w-16">Cover</th>
+                  <tr className="border-b" style={{borderColor:'#2a2d3e', backgroundColor:'rgba(42,45,62,0.4)'}}>
+                    <th className="text-left text-xs font-semibold uppercase tracking-wider px-4 py-3 w-16" style={{color:'#4a4d62'}}>Cover</th>
                     <th
-                      className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-white transition-colors select-none"
+                      className="text-left text-xs font-semibold uppercase tracking-wider px-4 py-3 cursor-pointer transition-colors select-none hover:text-[#f0f0f5]"
+                      style={{color:'#4a4d62'}}
                       onClick={() => handleSort('title')}
                     >
                       Book <SortIcon column="title" sortConfig={sortConfig} />
                     </th>
                     <th
-                      className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3 w-36 cursor-pointer hover:text-white transition-colors select-none"
+                      className="text-left text-xs font-semibold uppercase tracking-wider px-4 py-3 w-36 cursor-pointer transition-colors select-none hover:text-[#f0f0f5]"
+                      style={{color:'#4a4d62'}}
                       onClick={() => handleSort('author')}
                     >
                       Author <SortIcon column="author" sortConfig={sortConfig} />
                     </th>
                     <th
-                      className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3 w-52 cursor-pointer hover:text-white transition-colors select-none"
+                      className="text-left text-xs font-semibold uppercase tracking-wider px-4 py-3 w-52 cursor-pointer transition-colors select-none hover:text-[#f0f0f5]"
+                      style={{color:'#4a4d62'}}
                       onClick={() => handleSort('status')}
                     >
                       Status <SortIcon column="status" sortConfig={sortConfig} />
                     </th>
                     <th
-                      className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3 w-32 cursor-pointer hover:text-white transition-colors select-none"
+                      className="text-left text-xs font-semibold uppercase tracking-wider px-4 py-3 w-32 cursor-pointer transition-colors select-none hover:text-[#f0f0f5]"
+                      style={{color:'#4a4d62'}}
                       onClick={() => handleSort('addedAt')}
                     >
                       Added <SortIcon column="addedAt" sortConfig={sortConfig} />
                     </th>
-                    <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3 w-48">Review</th>
-                    <th className="text-right text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3 w-24">Actions</th>
+                    <th className="text-left text-xs font-semibold uppercase tracking-wider px-4 py-3 w-48" style={{color:'#4a4d62'}}>Review</th>
+                    <th className="text-right text-xs font-semibold uppercase tracking-wider px-4 py-3 w-24" style={{color:'#4a4d62'}}>Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-700/50">
+                <tbody>
                   {filteredEntries.map((entry) => {
                     const review = reviews[entry.id];
                     const hasReview = !!review;
 
                     return (
-                      <tr key={entry.id} className="hover:bg-slate-700/30 transition-colors">
+                      <tr key={entry.id} className="border-b transition-colors hover:bg-[#2a2d3e]/20" style={{borderColor:'rgba(42,45,62,0.5)'}}>
 
                         {/* Cover */}
                         <td className="px-4 py-3">
-                          <div className="w-10 h-14 bg-slate-700 rounded overflow-hidden flex-shrink-0">
+                          <div className="w-10 h-14 rounded overflow-hidden flex-shrink-0" style={{backgroundColor:'#2a2d3e'}}>
                             {entry.book.coverUrl ? (
                               <Image src={entry.book.coverUrl} alt={entry.book.title} width={40} height={56} className="w-full h-full object-cover" unoptimized />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">
-                                <BookOpen className="w-5 h-5 text-slate-500" />
+                                <BookOpen className="w-5 h-5" style={{color:'#4a4d62'}} />
                               </div>
                             )}
                           </div>
@@ -297,38 +323,41 @@ export default function LibraryPage() {
                         {/* Title */}
                         <td className="px-4 py-3">
                           {entry.book.googleBooksId ? (
-                            <Link href={`/book/${entry.book.googleBooksId}`} className="text-white font-medium hover:text-blue-400 transition-colors line-clamp-2">
+                            <Link href={`/book/${entry.book.googleBooksId}`} className="font-medium hover:text-indigo-400 transition-colors line-clamp-2" style={{color:'#f0f0f5'}}>
                               {entry.book.title}
                             </Link>
                           ) : (
-                            <span className="text-white font-medium line-clamp-2">{entry.book.title}</span>
+                            <span className="font-medium line-clamp-2" style={{color:'#f0f0f5'}}>{entry.book.title}</span>
                           )}
                         </td>
 
                         {/* Author */}
                         <td className="px-4 py-3">
-                          <p className="text-slate-400 text-sm">{entry.book.author}</p>
+                          <p className="text-sm" style={{color:'#8b8fa8'}}>{entry.book.author}</p>
                         </td>
 
                         {/* Status */}
                         <td className="px-4 py-3">
-                          <select
-                            value={entry.status}
-                            disabled={updatingEntryId === entry.id}
-                            onChange={(e) => handleStatusChange(entry.id, e.target.value)}
-                            className="bg-slate-900 border border-slate-600 text-slate-200 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <option value="WISHLIST">Wishlist</option>
-                            <option value="READING">Currently Reading</option>
-                            <option value="FINISHED">Finished Reading</option>
-                          </select>
-                          {updatingEntryId === entry.id && (
-                            <Loader2 className="w-3.5 h-3.5 text-blue-400 animate-spin inline ml-2" />
-                          )}
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={entry.status}
+                              disabled={updatingEntryId === entry.id}
+                              onChange={(e) => handleStatusChange(entry.id, e.target.value)}
+                              className="border text-sm rounded-lg px-3 py-1.5 outline-none focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                              style={{backgroundColor:'#0f1117', borderColor:'#2a2d3e', color:'#f0f0f5'}}
+                            >
+                              <option value="WISHLIST">&#9679; Wishlist</option>
+                              <option value="READING">&#9679; Currently Reading</option>
+                              <option value="FINISHED">&#9679; Finished Reading</option>
+                            </select>
+                            {updatingEntryId === entry.id && (
+                              <Loader2 className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
+                            )}
+                          </div>
                         </td>
 
                         {/* Date */}
-                        <td className="px-4 py-3 text-slate-400 text-sm">
+                        <td className="px-4 py-3 text-sm" style={{color:'#8b8fa8'}}>
                           {new Date(entry.addedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </td>
 
@@ -336,23 +365,22 @@ export default function LibraryPage() {
                         <td className="px-4 py-3">
                           {entry.status === 'FINISHED' ? (
                             hasReview ? (
-                              // Has a review — show stars + snippet + view/edit buttons
                               <div className="space-y-1.5">
                                 <StarDisplay rating={review.rating} />
-                                <p className="text-slate-400 text-xs line-clamp-1 max-w-[160px]">
+                                <p className="text-xs line-clamp-1 max-w-[160px]" style={{color:'#8b8fa8'}}>
                                   {review.content}
                                 </p>
                                 <div className="flex gap-2 mt-1">
                                   <button
                                     onClick={() => setViewModal({ open: true, entryId: entry.id })}
-                                    className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                                    className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
                                   >
                                     <Eye className="w-3.5 h-3.5" />
                                     View
                                   </button>
                                   <button
                                     onClick={() => setEditModal({ open: true, entryId: entry.id })}
-                                    className="flex items-center gap-1 text-xs text-yellow-400 hover:text-yellow-300 transition-colors"
+                                    className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 transition-colors"
                                   >
                                     <Pencil className="w-3.5 h-3.5" />
                                     Edit
@@ -360,17 +388,16 @@ export default function LibraryPage() {
                                 </div>
                               </div>
                             ) : (
-                              // No review yet
                               <button
                                 onClick={() => setEditModal({ open: true, entryId: entry.id })}
-                                className="flex items-center gap-1 text-sm text-yellow-400 hover:text-yellow-300 transition-colors"
+                                className="flex items-center gap-1 text-sm text-amber-400 hover:text-amber-300 transition-colors"
                               >
                                 <Star className="w-4 h-4" />
                                 Write Review
                               </button>
                             )
                           ) : (
-                            <span className="text-slate-600 text-xs">Mark as finished to review</span>
+                            <span className="text-xs" style={{color:'#4a4d62'}}>Mark as finished to review</span>
                           )}
                         </td>
 
@@ -378,7 +405,8 @@ export default function LibraryPage() {
                         <td className="px-4 py-3 text-right">
                           <button
                             onClick={() => handleRemove(entry.id)}
-                            className="text-slate-500 hover:text-red-400 transition-colors p-1 rounded"
+                            className="p-1 rounded transition-colors hover:text-red-400"
+                            style={{color:'#4a4d62'}}
                             title="Remove from library"
                           >
                             <Trash2 className="w-4 h-4" />
