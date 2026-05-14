@@ -199,7 +199,7 @@ export default function LibraryPage() {
             <Library className="w-6 h-6" style={{color:'#4ade80'}} />
             <h1 className="text-2xl font-bold tracking-tight" style={{color:'#f0f0f5'}}>My Library</h1>
           </div>
-          <p className="text-sm ml-12" style={{color:'#8b8fa8'}}>{entries.length} books in your collection</p>
+          <p className="text-sm ml-9" style={{color:'#8b8fa8'}}>{entries.length} books in your collection</p>
         </div>
 
         {/* Stat cards */}

@@ -88,14 +88,14 @@ export default function SearchPage() {
             <Search className="w-6 h-6" style={{color:'#818cf8'}} />
             <h1 className="text-2xl font-bold tracking-tight" style={{color:'#f0f0f5'}}>Search Books</h1>
           </div>
-          <p className="text-sm ml-12" style={{color:'#8b8fa8'}}>Find any book and add it to your library</p>
+          <p className="text-sm ml-9" style={{color:'#8b8fa8'}}>Find any book and add it to your library</p>
         </div>
 
         {/* Search form */}
         <form onSubmit={handleSearch} className="mb-8">
           <div className="flex gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5" style={{color:'#4a4d62'}} />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4" style={{color:'#6b7280'}} />
               <input
                 type="text"
                 value={query}

@@ -98,7 +98,7 @@ export default function RecommendationsPage() {
             <Sparkles className="w-6 h-6" style={{ color: '#818cf8' }} />
             <h1 className="text-2xl font-bold tracking-tight" style={{ color: '#f0f0f5' }}>Book Recommendations</h1>
           </div>
-          <p className="text-sm ml-12" style={{ color: '#8b8fa8' }}>Get personalised AI-powered book suggestions</p>
+          <p className="text-sm ml-9" style={{ color: '#8b8fa8' }}>Get personalised AI-powered book suggestions</p>
         </div>
 
         {/* Tab bar */}
