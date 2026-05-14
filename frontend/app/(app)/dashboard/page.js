@@ -199,13 +199,13 @@ function ReadingGoalWidget({ finishedCount }) {
 
 function QuoteCard({ quote }) {
   return (
-    <div className="rounded-2xl border px-4 py-3 flex flex-col h-full" style={{ backgroundColor: '#1a1d27', borderColor: 'rgba(99,102,241,0.3)' }}>
-      <div className="flex items-center gap-2 mb-2">
+    <div className="flex-1 min-w-0 rounded-2xl border px-4 py-3 flex flex-col overflow-hidden" style={{ backgroundColor: '#1a1d27', borderColor: 'rgba(99,102,241,0.3)' }}>
+      <div className="flex items-center gap-1.5 mb-2 flex-shrink-0">
         <Quote className="w-3 h-3 flex-shrink-0" style={{ color: '#818cf8' }} />
         <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#818cf8' }}>Quote of the Session</span>
       </div>
-      <p className="text-xs leading-relaxed italic flex-1 line-clamp-4" style={{ color: '#e2e4f0' }}>&ldquo;{quote.text}&rdquo;</p>
-      <p className="text-xs mt-2" style={{ color: '#6b7280' }}>— {quote.author}</p>
+      <p className="text-xs leading-relaxed italic flex-1 overflow-hidden" style={{ color: '#e2e4f0', display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical' }}>&ldquo;{quote.text}&rdquo;</p>
+      <p className="text-xs mt-2 flex-shrink-0 truncate" style={{ color: '#6b7280' }}>— {quote.author}</p>
     </div>
   );
 }
@@ -214,17 +214,16 @@ function QuoteCard({ quote }) {
 
 function WordCard({ word }) {
   return (
-    <div className="rounded-2xl border px-4 py-3 flex flex-col h-full" style={{ backgroundColor: '#1a1d27', borderColor: '#2a2d3e' }}>
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-xs font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: 'rgba(74,222,128,0.1)', color: '#4ade80' }}>Aa</span>
+    <div className="flex-1 min-w-0 rounded-2xl border px-4 py-3 flex flex-col overflow-hidden" style={{ backgroundColor: '#1a1d27', borderColor: '#2a2d3e' }}>
+      <div className="flex items-center gap-1.5 mb-2 flex-shrink-0">
+        <span className="text-xs font-bold px-1.5 py-0.5 rounded flex-shrink-0" style={{ backgroundColor: 'rgba(74,222,128,0.1)', color: '#4ade80' }}>Aa</span>
         <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#4ade80' }}>Word of the Session</span>
       </div>
-      <div className="flex items-baseline gap-2 mb-1">
+      <div className="flex items-baseline gap-2 mb-1.5 flex-shrink-0 flex-wrap">
         <span className="text-sm font-bold" style={{ color: '#f0f0f5' }}>{word.word}</span>
-        <span className="text-xs px-1.5 py-0.5 rounded flex-shrink-0" style={{ backgroundColor: '#2a2d3e', color: '#6b7280' }}>{word.type}</span>
+        <span className="text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: '#2a2d3e', color: '#6b7280' }}>{word.type}</span>
       </div>
-      <p className="text-xs leading-relaxed flex-1 line-clamp-3" style={{ color: '#8b8fa8' }}>{word.definition}</p>
-      <p className="text-xs leading-relaxed italic border-l-2 pl-2 mt-2 line-clamp-2" style={{ color: '#4a4d62', borderColor: '#2a2d3e' }}>&ldquo;{word.example}&rdquo;</p>
+      <p className="text-xs leading-relaxed overflow-hidden flex-1" style={{ color: '#8b8fa8', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>{word.definition}</p>
     </div>
   );
 }
@@ -487,7 +486,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Right: Quote + Word side by side */}
-          <div className="hidden lg:grid grid-cols-2 gap-3 lg:w-[440px] xl:w-[500px] flex-shrink-0 self-stretch">
+          <div className="hidden lg:flex gap-3 lg:w-[460px] xl:w-[520px] flex-shrink-0 self-stretch">
             <QuoteCard quote={sessionQuote} />
             <WordCard word={sessionWord} />
           </div>
