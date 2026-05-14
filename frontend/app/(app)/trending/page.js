@@ -68,7 +68,7 @@ export default function TrendingPage() {
 
   return (
     <div className="min-h-screen pb-16" style={{backgroundColor:'#0f1117'}}>
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* Header */}
         <div className="mb-8">
