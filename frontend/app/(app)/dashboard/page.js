@@ -13,14 +13,56 @@ import { useAuth } from '../../../context/AuthContext';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const QUICK_MOODS = [
-  { label: '✨ Uplifting', query: 'something uplifting and feel-good' },
-  { label: '🔥 Gripping Thriller', query: 'gripping page-turner thriller suspense' },
-  { label: '🏰 Epic Fantasy', query: 'epic fantasy magic adventure dragons' },
-  { label: '☕ Cozy & Relaxing', query: 'cozy relaxing warm comfortable read' },
-  { label: '🚀 Mind-Bending Sci-Fi', query: 'mind-bending science fiction space future' },
-  { label: '💡 Mind-Expanding', query: 'thought-provoking philosophical deep intellectual' },
+const MOOD_POOL = [
+  { label: '✨ Uplifting',          query: 'uplifting feel-good hopeful inspiring' },
+  { label: '🔥 Gripping Thriller',  query: 'gripping page-turner thriller suspense' },
+  { label: '🏰 Epic Fantasy',       query: 'epic fantasy magic adventure dragons' },
+  { label: '☕ Cozy & Relaxing',    query: 'cozy relaxing warm comfortable read' },
+  { label: '🚀 Mind-Bending Sci-Fi',query: 'mind-bending science fiction space future' },
+  { label: '💡 Mind-Expanding',     query: 'thought-provoking philosophical deep intellectual' },
+  { label: '😂 Laugh-Out-Loud',     query: 'funny hilarious comedy laugh witty humour' },
+  { label: '💔 Emotional & Moving', query: 'emotional heart-wrenching moving tearjerker' },
+  { label: '🌍 Epic Adventure',     query: 'epic adventure journey travel exploration' },
+  { label: '🔮 Dark & Mysterious',  query: 'dark mysterious gothic atmospheric eerie' },
+  { label: '💘 Swoony Romance',     query: 'romantic love story swoon heartwarming' },
+  { label: '🧠 True Crime',         query: 'true crime real crime detective investigation' },
+  { label: '🌱 Coming of Age',      query: 'coming of age young adult self-discovery growth' },
+  { label: '🗺️ Historical Epic',    query: 'historical fiction epic period drama past' },
+  { label: '👻 Spine-Tingling',     query: 'horror spine-chilling scary ghost supernatural' },
+  { label: '🎭 Literary Fiction',   query: 'literary fiction character-driven beautiful prose' },
+  { label: '🌊 Survival Story',     query: 'survival wilderness man vs nature grit endurance' },
+  { label: '🤖 Dystopian',          query: 'dystopian future society rebellion resistance' },
+  { label: '🧬 Hard Science',       query: 'hard science space exploration physics real science' },
+  { label: '🕵️ Classic Mystery',   query: 'classic mystery detective whodunit Agatha Christie style' },
+  { label: '📖 Short & Sweet',      query: 'short stories novellas quick satisfying reads' },
+  { label: '🦸 Superhero Vibes',    query: 'superheroes powers action urban fantasy modern heroes' },
+  { label: '🌸 Feel-Good Fiction',  query: 'feel-good warm slice of life contemporary fiction' },
+  { label: '💼 Ambition & Power',   query: 'ambition power corporate politics rivalry drama' },
+  { label: '🎶 Music & Art',        query: 'music art creativity passion bohemian artists' },
+  { label: '🌏 Cultural Journey',   query: 'multicultural world travel different cultures perspectives' },
+  { label: '🧘 Mindful & Spiritual',query: 'mindfulness spirituality self-help inner peace wellness' },
+  { label: '⚔️ War & Conflict',     query: 'war conflict soldiers battle sacrifice historical military' },
+  { label: '🦊 Clever & Witty',     query: 'clever witty smart satirical sharp humour' },
+  { label: '🌌 Space Opera',        query: 'space opera galaxy aliens epic sci-fi adventure' },
 ];
+
+const MOOD_SESSION_KEY = 'br_mood_chips';
+
+function pickSessionMoods() {
+  try {
+    const cached = sessionStorage.getItem(MOOD_SESSION_KEY);
+    if (cached) return JSON.parse(cached);
+  } catch { /* ignore */ }
+  // Fisher-Yates shuffle, pick 6
+  const pool = [...MOOD_POOL];
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  const picked = pool.slice(0, 6);
+  try { sessionStorage.setItem(MOOD_SESSION_KEY, JSON.stringify(picked)); } catch { /* ignore */ }
+  return picked;
+}
 
 const GOAL_KEY = 'br_reading_goal';
 
@@ -241,6 +283,7 @@ export default function DashboardPage() {
   const [libraryBookIds, setLibraryBookIds] = useState(new Set());
   const [forYou, setForYou] = useState({ books: [], loading: true, empty: false });
   const [moodResult, setMoodResult] = useState({ books: [], loading: false, activeChip: null });
+  const [sessionMoods] = useState(() => pickSessionMoods());
 
   useEffect(() => {
     async function init() {
@@ -375,7 +418,7 @@ export default function DashboardPage() {
             <section>
               <h2 className="text-base font-bold tracking-tight mb-4" style={{ color: '#f0f0f5' }}>🎭 Browse by Mood</h2>
               <div className="flex flex-wrap gap-2 mb-5">
-                {QUICK_MOODS.map((chip) => (
+                {sessionMoods.map((chip) => (
                   <button
                     key={chip.label}
                     onClick={() => handleMoodChip(chip)}
