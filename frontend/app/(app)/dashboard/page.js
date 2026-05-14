@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Sparkles, BookOpen, CheckCircle, Bookmark, BookMarked,
-  Target, ChevronRight,
+  Target, ChevronRight, Library, TrendingUp, Search,
 } from 'lucide-react';
 import { recommendations as recApi, library as libraryApi } from '../../../lib/api';
 import HorizontalBookScroll from '../../../components/HorizontalBookScroll';
@@ -133,6 +134,99 @@ function ReadingGoalWidget({ finishedCount }) {
           </p>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Up Next widget ────────────────────────────────────────────────────────────
+
+function UpNextCard({ entries, loading }) {
+  const wishlist = entries.filter(e => e.status === 'WISHLIST').slice(0, 4);
+
+  return (
+    <div className="rounded-2xl border p-5" style={{ backgroundColor: '#1a1d27', borderColor: '#2a2d3e' }}>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Bookmark className="w-4 h-4" style={{ color: '#f59e0b' }} />
+          <span className="text-sm font-semibold" style={{ color: '#f0f0f5' }}>Up Next</span>
+        </div>
+        <Link href="/library" className="text-xs transition-colors hover:text-indigo-400" style={{ color: '#8b8fa8' }}>
+          View all →
+        </Link>
+      </div>
+
+      {loading ? (
+        <div className="space-y-3">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="flex items-center gap-3 animate-pulse">
+              <div className="w-9 h-12 rounded-lg flex-shrink-0" style={{ backgroundColor: '#2a2d3e' }} />
+              <div className="flex-1 space-y-1.5">
+                <div className="h-2.5 rounded" style={{ backgroundColor: '#2a2d3e', width: '75%' }} />
+                <div className="h-2 rounded" style={{ backgroundColor: '#2a2d3e', width: '50%' }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : wishlist.length === 0 ? (
+        <div className="text-center py-4">
+          <p className="text-xs" style={{ color: '#4a4d62' }}>No books in your wishlist yet.</p>
+          <Link href="/search" className="text-xs text-indigo-400 hover:text-indigo-300 mt-1 inline-block">
+            Search to add some →
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {wishlist.map((entry, idx) => (
+            <div key={idx} className="flex items-center gap-3">
+              <div className="w-9 h-12 rounded-lg flex-shrink-0 overflow-hidden relative" style={{ backgroundColor: '#2a2d3e' }}>
+                {entry.book?.coverUrl ? (
+                  <Image src={entry.book.coverUrl} alt={entry.book.title || ''} fill className="object-cover" unoptimized />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <BookOpen className="w-3.5 h-3.5" style={{ color: '#4a4d62' }} />
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-medium leading-snug line-clamp-2" style={{ color: '#f0f0f5' }}>{entry.book?.title}</p>
+                <p className="text-xs truncate mt-0.5" style={{ color: '#6b7280' }}>{entry.book?.author}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Quick Actions widget ───────────────────────────────────────────────────────
+
+const QUICK_ACTIONS = [
+  { href: '/recommendations', label: 'Discover', icon: Sparkles, color: '#818cf8', bg: 'rgba(99,102,241,0.12)' },
+  { href: '/library',         label: 'Library',  icon: Library,   color: '#4ade80', bg: 'rgba(34,197,94,0.12)'  },
+  { href: '/trending',        label: 'Trending', icon: TrendingUp, color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
+  { href: '/search',          label: 'Search',   icon: Search,    color: '#a78bfa', bg: 'rgba(168,85,247,0.12)' },
+];
+
+function QuickActionsCard() {
+  return (
+    <div className="rounded-2xl border p-4" style={{ backgroundColor: '#1a1d27', borderColor: '#2a2d3e' }}>
+      <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#4a4d62' }}>Quick Actions</p>
+      <div className="grid grid-cols-2 gap-2">
+        {QUICK_ACTIONS.map(({ href, label, icon: Icon, color, bg }) => (
+          <Link
+            key={href}
+            href={href}
+            className="flex flex-col items-center gap-2 p-3 rounded-xl border transition-all hover:border-indigo-500/40 hover:bg-[#0f1117]"
+            style={{ backgroundColor: '#0f1117', borderColor: '#2a2d3e' }}
+          >
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: bg }}>
+              <Icon className="w-4 h-4" style={{ color }} />
+            </div>
+            <span className="text-xs font-medium" style={{ color: '#8b8fa8' }}>{label}</span>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }
@@ -309,36 +403,11 @@ export default function DashboardPage() {
           </div>
 
           {/* Right: sidebar */}
-          <div className="space-y-5">
-            <ReadingGoalWidget finishedCount={stats.finished} />
-
-            <div className="rounded-2xl border p-5" style={{ backgroundColor: '#1a1d27', borderColor: '#2a2d3e' }}>
-              <h3 className="text-sm font-semibold mb-4" style={{ color: '#f0f0f5' }}>Quick Links</h3>
-              <div className="space-y-1.5">
-                {[
-                  { href: '/recommendations', label: 'Discover Books', sub: 'Search by author, genre, mood', cls: 'text-indigo-400', bg: 'rgba(99,102,241,0.1)' },
-                  { href: '/library', label: 'My Library', sub: `${entries.length} book${entries.length !== 1 ? 's' : ''}`, cls: 'text-green-400', bg: 'rgba(34,197,94,0.1)' },
-                  { href: '/trending', label: 'Trending Now', sub: 'Top 50 books today', cls: 'text-amber-400', bg: 'rgba(245,158,11,0.1)' },
-                  { href: '/search', label: 'Search Books', sub: 'Find any book', cls: 'text-purple-400', bg: 'rgba(168,85,247,0.1)' },
-                ].map(link => (
-                  <Link key={link.href} href={link.href} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#2a2d3e] transition-all">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: link.bg }}>
-                      <ChevronRight className={`w-4 h-4 ${link.cls}`} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium" style={{ color: '#f0f0f5' }}>{link.label}</p>
-                      <p className="text-xs" style={{ color: '#8b8fa8' }}>{link.sub}</p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-2xl border p-5" style={{ backgroundColor: '#1a1d27', borderColor: '#2a2d3e' }}>
-              <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#4a4d62' }}>Tip</p>
-              <p className="text-sm leading-relaxed" style={{ color: '#8b8fa8' }}>
-                Rate your finished books ⭐ so we can tailor your &ldquo;Recommended For You&rdquo; picks more accurately.
-              </p>
+          <div className="lg:border-l lg:pl-6" style={{ borderColor: '#2a2d3e' }}>
+            <div className="lg:sticky lg:top-8 space-y-4">
+              <ReadingGoalWidget finishedCount={stats.finished} />
+              <UpNextCard entries={entries} loading={libraryLoading} />
+              <QuickActionsCard />
             </div>
           </div>
         </div>
