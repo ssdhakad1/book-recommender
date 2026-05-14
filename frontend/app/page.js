@@ -105,27 +105,21 @@ export default function HomePage() {
         {/* Feature cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-4xl w-full mb-20">
           <div className="rounded-2xl p-6 text-left border transition-all hover:border-indigo-500/30" style={{ backgroundColor: '#1a1d27', borderColor: '#2a2d3e' }}>
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-5" style={{ backgroundColor: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.2)' }}>
-              <Sparkles className="w-5 h-5 text-indigo-400" />
-            </div>
+            <Sparkles className="w-7 h-7 mb-5" style={{ color: '#818cf8' }} />
             <h3 className="font-bold text-lg mb-2 tracking-tight" style={{ color: '#f0f0f5' }}>Smart Recommendations</h3>
             <p className="text-sm leading-relaxed" style={{ color: '#8b8fa8' }}>
               Personalised suggestions by author, genre, mood, or reading history — powered by AI.
             </p>
           </div>
           <div className="rounded-2xl p-6 text-left border transition-all hover:border-green-500/30" style={{ backgroundColor: '#1a1d27', borderColor: '#2a2d3e' }}>
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-5" style={{ backgroundColor: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.2)' }}>
-              <Library className="w-5 h-5 text-green-400" />
-            </div>
+            <Library className="w-7 h-7 mb-5" style={{ color: '#4ade80' }} />
             <h3 className="font-bold text-lg mb-2 tracking-tight" style={{ color: '#f0f0f5' }}>Personal Library</h3>
             <p className="text-sm leading-relaxed" style={{ color: '#8b8fa8' }}>
               Track every book you want to read, are reading, or have finished. Write reviews and rate your reads.
             </p>
           </div>
           <div className="rounded-2xl p-6 text-left border transition-all hover:border-amber-500/30" style={{ backgroundColor: '#1a1d27', borderColor: '#2a2d3e' }}>
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-5" style={{ backgroundColor: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.2)' }}>
-              <TrendingUp className="w-5 h-5 text-amber-400" />
-            </div>
+            <TrendingUp className="w-7 h-7 mb-5" style={{ color: '#fbbf24' }} />
             <h3 className="font-bold text-lg mb-2 tracking-tight" style={{ color: '#f0f0f5' }}>Top 50 Trending</h3>
             <p className="text-sm leading-relaxed" style={{ color: '#8b8fa8' }}>
               Discover what readers are engaging with right now. Browse today&apos;s top 50 trending books.
