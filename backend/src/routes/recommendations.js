@@ -7,6 +7,9 @@ const router = express.Router();
 const prisma = new PrismaClient();
 router.use(authMiddleware);
 
+// Subjects too generic / noisy to be useful for finding similar authors
+const SUBJECT_NOISE = /^(short stories|american|english|fiction|large type|large print|accessible book|protected daisy|lending library|internet archive|nonfiction|open library staff picks|overdrive|in library|ebook|audiobook|juvenile|juvenile fiction|children|picture books|illustrated|hardcover|paperback|spanish language|french language|translated|american fiction|english fiction|bestseller)$/i;
+
 // ─── Mood → Open Library subjects mapping ────────────────────────────────────
 // Each entry has regex patterns to match against the user's mood text,
 // and a list of Open Library subjects to search.
@@ -98,19 +101,27 @@ async function olSubjectSearch(subject, limit = 12) {
 }
 
 // Get an author's top subjects so we can find similar authors
+// Filters out noise subjects (location names, format labels, language tags)
 async function getAuthorTopSubjects(authorName) {
   try {
     const fields = 'subject';
-    const url = `https://openlibrary.org/search.json?author=${encodeURIComponent(authorName)}&limit=20&fields=${fields}`;
+    const url = `https://openlibrary.org/search.json?author=${encodeURIComponent(authorName)}&limit=25&fields=${fields}`;
     const res = await axios.get(url, { timeout: 10000 });
     const allSubjects = (res.data.docs || []).flatMap(d => d.subject || []);
-    // Count subject frequency and return top 4
     const freq = {};
     allSubjects.forEach(s => { freq[s] = (freq[s] || 0) + 1; });
     return Object.entries(freq)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 4)
-      .map(([s]) => s);
+      .map(([s]) => s)
+      // Remove noise: too short, too long, location-like, or matching the blocklist
+      .filter(s => {
+        if (s.length < 5 || s.length > 45) return false;
+        if (SUBJECT_NOISE.test(s)) return false;
+        // Skip proper nouns that look like place/person names (mostly capitalized single words)
+        if (/^[A-Z][a-z]+$/.test(s) && s.length < 10) return false;
+        return true;
+      })
+      .slice(0, 6);
   } catch (err) {
     console.error('Author subject lookup error:', err.message);
     return [];
@@ -144,34 +155,47 @@ router.post('/', async (req, res) => {
 
     // ── By Author ──────────────────────────────────────────────────────────────
     // Strategy:
-    //  1. Get the author's own top-rated works
-    //  2. Extract their most common subjects (horror, thriller, etc.)
-    //  3. Search those subjects — filtering OUT the original author
-    //  4. Mix own works + similar-author books for a rich result set
+    //  1. Get up to 3 of the author's own top-rated works (taste, not a dump)
+    //  2. Extract their most common quality subjects (horror, psychological thriller, etc.)
+    //  3. Search 4 subjects — filtering OUT the original author by full name AND last name
+    //  4. Result ratio: ~3 own + ~7 similar-author picks
     if (mode === 'author') {
       const authorName = input.trim();
+      const authorLast = authorName.split(' ').pop().toLowerCase();
 
-      // Step 1: Author's own popular books
-      const ownBooks = await olSearch(`author:${authorName}`, numLimit, 'rating');
+      // Step 1: Get a small sample of the author's own best books (capped at 3)
+      const ownBooks = await olSearch(`author:${authorName}`, 5, 'rating');
+      const ownMapped = ownBooks.slice(0, 3).map(d =>
+        mapWorkToBook(d, `Top-rated work by ${authorName}`)
+      );
+      const ownTitles = new Set(ownMapped.map(b => (b.title || '').toLowerCase()));
 
-      // Step 2: Find this author's top subjects
+      // Step 2: Find this author's top quality subjects (noise-filtered)
       const topSubjects = await getAuthorTopSubjects(authorName);
 
-      // Step 3: For each top subject, get books by OTHER authors
+      // Step 3: For each top subject, get books by OTHER authors (use 4 subjects for variety)
+      const wantSimilar = numLimit - ownMapped.length; // e.g. 7 slots
       const similarBatches = await Promise.all(
-        topSubjects.slice(0, 3).map(subject => olSubjectSearch(subject, numLimit))
+        topSubjects.slice(0, 4).map(subject => olSubjectSearch(subject, wantSimilar + 3))
       );
+
       const similarBooks = similarBatches
         .flat()
         .filter(w => {
-          const bookAuthor = w.authors?.[0]?.name || '';
-          return !bookAuthor.toLowerCase().includes(authorName.toLowerCase());
+          const bookAuthor = (w.authors?.[0]?.name || '').toLowerCase();
+          // Exclude the input author by full name and last name
+          return (
+            !bookAuthor.includes(authorName.toLowerCase()) &&
+            !(authorLast.length > 3 && bookAuthor.includes(authorLast))
+          );
         });
 
-      const ownMapped = ownBooks.map(d => mapWorkToBook(d, `A popular work by ${authorName}`));
-      const similarMapped = similarBooks.map(w =>
-        mapWorkToBook(w, `Similar to ${authorName} — both explore ${topSubjects[0] || 'the same themes'}`)
-      );
+      const similarMapped = dedupeBooks(
+        similarBooks.map(w =>
+          mapWorkToBook(w, `Readers of ${authorName} also enjoy — ${topSubjects[0] || 'same themes'}`)
+        ),
+        ownTitles
+      ).slice(0, wantSimilar);
 
       items = dedupeBooks([...ownMapped, ...similarMapped]).slice(0, numLimit);
     }

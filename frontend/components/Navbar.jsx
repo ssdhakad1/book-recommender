@@ -16,12 +16,12 @@ export default function Navbar() {
   const { user, logout } = useAuth();
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-40 h-16 border-b" style={{backgroundColor:'rgba(15,17,23,0.85)', backdropFilter:'blur(12px)', borderColor:'#2a2d3e'}}>
+    <nav className="fixed top-0 left-0 right-0 z-40 h-16 border-b" style={{backgroundColor:'rgba(15,17,23,0.9)', backdropFilter:'blur(16px)', borderColor:'#2a2d3e'}}>
       <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
         {/* Logo */}
         <Link href="/dashboard" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center flex-shrink-0">
-            <BookOpen className="w-4 h-4 text-white" />
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{backgroundColor:'#6366f1'}}>
+            <BookOpen className="w-5 h-5 text-white" />
           </div>
           <span className="font-bold text-base" style={{color:'#f0f0f5'}}>BookRecommender</span>
         </Link>
@@ -31,10 +31,15 @@ export default function Navbar() {
           {NAV_LINKS.map(({ href, label, icon: Icon }) => {
             const active = pathname === href;
             return (
-              <Link key={href} href={href} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all relative ${active ? 'text-indigo-400' : 'hover:bg-[#1a1d27]'}`} style={{color: active ? '#818cf8' : '#8b8fa8'}}>
+              <Link
+                key={href}
+                href={href}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all relative ${active ? '' : 'hover:bg-[#1a1d27]'}`}
+                style={{color: active ? '#818cf8' : '#8b8fa8'}}
+              >
                 <Icon className="w-4 h-4" />
                 {label}
-                {active && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 rounded-full" />}
+                {active && <span className="absolute -bottom-px left-0 right-0 h-0.5 bg-indigo-500 rounded-full" />}
               </Link>
             );
           })}
@@ -44,12 +49,17 @@ export default function Navbar() {
         {user && (
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center flex-shrink-0">
-                <span className="text-indigo-400 text-sm font-bold">{user.name?.[0]?.toUpperCase() || 'U'}</span>
+              <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{backgroundColor:'rgba(99,102,241,0.2)', border:'1px solid rgba(99,102,241,0.35)'}}>
+                <span className="text-sm font-bold" style={{color:'#818cf8'}}>{user.name?.[0]?.toUpperCase() || 'U'}</span>
               </div>
               <span className="hidden md:block text-sm font-medium max-w-[120px] truncate" style={{color:'#f0f0f5'}}>{user.name}</span>
             </div>
-            <button onClick={logout} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all hover:bg-[#1a1d27]" style={{color:'#8b8fa8'}} title="Sign out">
+            <button
+              onClick={logout}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all hover:bg-[#1a1d27]"
+              style={{color:'#8b8fa8'}}
+              title="Sign out"
+            >
               <LogOut className="w-4 h-4" />
               <span className="hidden md:block">Sign out</span>
             </button>
