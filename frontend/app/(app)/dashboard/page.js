@@ -456,7 +456,7 @@ export default function DashboardPage() {
       <div className="flex-1 flex flex-col max-w-6xl mx-auto w-full px-4 py-8 pb-16">
 
         {/* Greeting + Stats + top cards */}
-        <div className="flex flex-col lg:flex-row gap-6 mb-8">
+        <div className="flex flex-col lg:flex-row gap-6 mb-12">
 
           {/* Left: greeting + date + stats */}
           <div className="flex-1 min-w-0">
@@ -574,7 +574,7 @@ export default function DashboardPage() {
 
           {/* Right: sidebar */}
           <div className="lg:border-l lg:pl-6" style={{ borderColor: '#2a2d3e' }}>
-            <div className="space-y-6">
+            <div className="space-y-8">
               <ReadingGoalWidget finishedCount={stats.finished} />
               <UpNextCard entries={entries} loading={libraryLoading} />
               <BookTriviaSection initial={sessionTrivia} />
