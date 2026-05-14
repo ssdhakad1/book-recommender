@@ -5,8 +5,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   Sparkles, BookOpen, CheckCircle, Bookmark, BookMarked,
-  Target, ChevronRight, Library, TrendingUp, Search,
+  Target, ChevronRight, Library, TrendingUp, Search, Quote, Lightbulb,
 } from 'lucide-react';
+import { QUOTES, WORDS, DID_YOU_KNOW, TRIVIA } from './dailyContent';
 import { recommendations as recApi, library as libraryApi } from '../../../lib/api';
 import HorizontalBookScroll from '../../../components/HorizontalBookScroll';
 import { useAuth } from '../../../context/AuthContext';
@@ -64,7 +65,11 @@ function pickSessionMoods() {
   return picked;
 }
 
-const GOAL_KEY = 'br_reading_goal';
+const GOAL_KEY        = 'br_reading_goal';
+const QUOTE_KEY       = 'br_quote';
+const WORD_KEY        = 'br_word';
+const DYK_KEY         = 'br_dyk';
+const TRIVIA_KEY      = 'br_trivia';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -74,6 +79,16 @@ function getGreeting(name) {
   if (h < 12) return `Good morning, ${first}`;
   if (h < 17) return `Good afternoon, ${first}`;
   return `Good evening, ${first}`;
+}
+
+function pickOne(pool, key) {
+  try {
+    const idx = sessionStorage.getItem(key);
+    if (idx !== null) return pool[parseInt(idx, 10)] ?? pool[0];
+  } catch {}
+  const picked = Math.floor(Math.random() * pool.length);
+  try { sessionStorage.setItem(key, String(picked)); } catch {}
+  return pool[picked];
 }
 
 function loadGoal() {
@@ -180,6 +195,107 @@ function ReadingGoalWidget({ finishedCount }) {
   );
 }
 
+// ── Quote of the Session ──────────────────────────────────────────────────────
+
+function QuoteCard({ quote }) {
+  return (
+    <div className="rounded-2xl border p-5" style={{ backgroundColor: '#1a1d27', borderColor: 'rgba(99,102,241,0.3)' }}>
+      <div className="flex items-center gap-2 mb-3">
+        <Quote className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#818cf8' }} />
+        <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#818cf8' }}>Quote of the Session</span>
+      </div>
+      <p className="text-sm leading-relaxed italic mb-3" style={{ color: '#e2e4f0' }}>&ldquo;{quote.text}&rdquo;</p>
+      <p className="text-xs" style={{ color: '#6b7280' }}>— {quote.author}</p>
+    </div>
+  );
+}
+
+// ── Word of the Session ───────────────────────────────────────────────────────
+
+function WordCard({ word }) {
+  return (
+    <div className="rounded-2xl border p-4" style={{ backgroundColor: '#1a1d27', borderColor: '#2a2d3e' }}>
+      <div className="flex items-center gap-2 mb-2.5">
+        <span className="text-xs font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: 'rgba(74,222,128,0.1)', color: '#4ade80' }}>Aa</span>
+        <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#4ade80' }}>Word of the Session</span>
+      </div>
+      <div className="flex items-baseline gap-2 mb-1">
+        <span className="text-base font-bold" style={{ color: '#f0f0f5' }}>{word.word}</span>
+        <span className="text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: '#2a2d3e', color: '#6b7280' }}>{word.type}</span>
+      </div>
+      <p className="text-xs leading-relaxed mb-2" style={{ color: '#8b8fa8' }}>{word.definition}</p>
+      <p className="text-xs leading-relaxed italic border-l-2 pl-2" style={{ color: '#4a4d62', borderColor: '#2a2d3e' }}>&ldquo;{word.example}&rdquo;</p>
+    </div>
+  );
+}
+
+// ── Did You Know ──────────────────────────────────────────────────────────────
+
+function DidYouKnowCard({ fact }) {
+  return (
+    <div className="rounded-2xl border p-4" style={{ backgroundColor: '#1a1d27', borderColor: '#2a2d3e' }}>
+      <div className="flex items-center gap-2 mb-2.5">
+        <Lightbulb className="w-3.5 h-3.5" style={{ color: '#fbbf24' }} />
+        <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#fbbf24' }}>Did You Know?</span>
+      </div>
+      <p className="text-xs leading-relaxed" style={{ color: '#8b8fa8' }}>{fact.fact}</p>
+    </div>
+  );
+}
+
+// ── Book Trivia Section ───────────────────────────────────────────────────────
+
+function BookTriviaSection({ initial }) {
+  const [current, setCurrent] = useState(initial);
+  const [revealed, setRevealed] = useState(false);
+
+  const nextQuestion = () => {
+    let next;
+    do { next = TRIVIA[Math.floor(Math.random() * TRIVIA.length)]; }
+    while (next.q === current.q && TRIVIA.length > 1);
+    setCurrent(next);
+    setRevealed(false);
+  };
+
+  return (
+    <section>
+      <div className="flex items-center gap-2.5 mb-4">
+        <span className="text-lg leading-none">🧩</span>
+        <h2 className="text-base font-bold tracking-tight" style={{ color: '#f0f0f5' }}>Book Trivia</h2>
+        <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(99,102,241,0.1)', color: '#818cf8' }}>New each session</span>
+      </div>
+
+      <div className="rounded-2xl border p-6" style={{ backgroundColor: '#1a1d27', borderColor: '#2a2d3e' }}>
+        <p className="text-sm font-semibold leading-relaxed mb-5" style={{ color: '#f0f0f5' }}>{current.q}</p>
+
+        {!revealed ? (
+          <button
+            onClick={() => setRevealed(true)}
+            className="px-5 py-2.5 rounded-xl text-sm font-medium border transition-all hover:opacity-90"
+            style={{ backgroundColor: 'rgba(99,102,241,0.12)', borderColor: 'rgba(99,102,241,0.35)', color: '#818cf8' }}
+          >
+            Reveal Answer
+          </button>
+        ) : (
+          <div className="space-y-3">
+            <div className="rounded-xl px-4 py-3 border" style={{ backgroundColor: 'rgba(34,197,94,0.08)', borderColor: 'rgba(34,197,94,0.25)' }}>
+              <p className="text-sm font-semibold mb-1" style={{ color: '#4ade80' }}>{current.a}</p>
+              {current.detail && <p className="text-xs leading-relaxed" style={{ color: '#8b8fa8' }}>{current.detail}</p>}
+            </div>
+            <button
+              onClick={nextQuestion}
+              className="text-xs font-medium transition-colors hover:text-indigo-300"
+              style={{ color: '#6b7280' }}
+            >
+              Next question →
+            </button>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 // ── Up Next widget ────────────────────────────────────────────────────────────
 
 function UpNextCard({ entries, loading }) {
@@ -283,7 +399,11 @@ export default function DashboardPage() {
   const [libraryBookIds, setLibraryBookIds] = useState(new Set());
   const [forYou, setForYou] = useState({ books: [], loading: true, empty: false });
   const [moodResult, setMoodResult] = useState({ books: [], loading: false, activeChip: null });
-  const [sessionMoods] = useState(() => pickSessionMoods());
+  const [sessionMoods]  = useState(() => pickSessionMoods());
+  const [sessionQuote]  = useState(() => pickOne(QUOTES,      QUOTE_KEY));
+  const [sessionWord]   = useState(() => pickOne(WORDS,       WORD_KEY));
+  const [sessionDyk]    = useState(() => pickOne(DID_YOU_KNOW, DYK_KEY));
+  const [sessionTrivia] = useState(() => pickOne(TRIVIA,      TRIVIA_KEY));
 
   useEffect(() => {
     async function init() {
@@ -417,6 +537,7 @@ export default function DashboardPage() {
             {/* Browse by Mood */}
             <section>
               <h2 className="text-base font-bold tracking-tight mb-4" style={{ color: '#f0f0f5' }}>🎭 Browse by Mood</h2>
+
               <div className="flex flex-wrap gap-2 mb-5">
                 {sessionMoods.map((chip) => (
                   <button
@@ -443,13 +564,19 @@ export default function DashboardPage() {
                 <HorizontalBookScroll books={moodResult.books} onAddToLibrary={handleAddToLibrary} libraryBookIds={libraryBookIds} />
               )}
             </section>
+
+            {/* Book Trivia */}
+            <BookTriviaSection initial={sessionTrivia} />
           </div>
 
           {/* Right: sidebar */}
           <div className="lg:border-l lg:pl-6" style={{ borderColor: '#2a2d3e' }}>
-            <div className="lg:sticky lg:top-8 space-y-4">
+            <div className="space-y-4">
+              <QuoteCard quote={sessionQuote} />
               <ReadingGoalWidget finishedCount={stats.finished} />
+              <WordCard word={sessionWord} />
               <UpNextCard entries={entries} loading={libraryLoading} />
+              <DidYouKnowCard fact={sessionDyk} />
               <QuickActionsCard />
             </div>
           </div>
