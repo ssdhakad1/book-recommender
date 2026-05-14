@@ -459,39 +459,48 @@ export default function DashboardPage() {
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#0f1117' }}>
       <div className="flex-1 flex flex-col max-w-6xl mx-auto w-full px-4 py-8 pb-16">
 
-        {/* Greeting + Stats */}
-        <div className="mb-10">
-          <h1 className="text-3xl font-bold tracking-tight mb-1" style={{ color: '#f0f0f5' }}>
-            {getGreeting(user?.name)} 👋
-          </h1>
-          <p className="text-sm mb-6" style={{ color: '#8b8fa8' }}>
-            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-          </p>
+        {/* Greeting + Stats + top cards */}
+        <div className="flex flex-col lg:flex-row lg:items-start gap-6 mb-8">
 
-          {!libraryLoading && (
-            <div className="flex gap-3 flex-wrap">
-              {[
-                { icon: CheckCircle, cls: 'text-green-400', bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.2)', count: stats.finished, label: 'Finished' },
-                { icon: BookOpen, cls: 'text-indigo-400', bg: 'rgba(99,102,241,0.1)', border: 'rgba(99,102,241,0.2)', count: stats.reading, label: 'Reading' },
-                { icon: Bookmark, cls: 'text-amber-400', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.2)', count: stats.wishlist, label: 'Wishlist' },
-              ].map(({ icon: Icon, cls, bg, border, count, label }) => (
-                <div key={label} className="flex items-center gap-3 rounded-2xl px-4 py-3 border" style={{ backgroundColor: bg, borderColor: border }}>
-                  <Icon className={`w-4 h-4 ${cls}`} />
-                  <span className="text-sm font-medium" style={{ color: '#f0f0f5' }}>
-                    <span className="font-bold">{count}</span>
-                    <span className="ml-1.5" style={{ color: '#8b8fa8' }}>{label}</span>
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
+          {/* Left: greeting + date + stats */}
+          <div className="flex-1 min-w-0">
+            <h1 className="text-3xl font-bold tracking-tight mb-1" style={{ color: '#f0f0f5' }}>
+              {getGreeting(user?.name)} 👋
+            </h1>
+            <p className="text-sm mb-6" style={{ color: '#8b8fa8' }}>
+              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+            </p>
+            {!libraryLoading && (
+              <div className="flex gap-3 flex-wrap">
+                {[
+                  { icon: CheckCircle, cls: 'text-green-400', bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.2)', count: stats.finished, label: 'Finished' },
+                  { icon: BookOpen, cls: 'text-indigo-400', bg: 'rgba(99,102,241,0.1)', border: 'rgba(99,102,241,0.2)', count: stats.reading, label: 'Reading' },
+                  { icon: Bookmark, cls: 'text-amber-400', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.2)', count: stats.wishlist, label: 'Wishlist' },
+                ].map(({ icon: Icon, cls, bg, border, count, label }) => (
+                  <div key={label} className="flex items-center gap-3 rounded-2xl px-4 py-3 border" style={{ backgroundColor: bg, borderColor: border }}>
+                    <Icon className={`w-4 h-4 ${cls}`} />
+                    <span className="text-sm font-medium" style={{ color: '#f0f0f5' }}>
+                      <span className="font-bold">{count}</span>
+                      <span className="ml-1.5" style={{ color: '#8b8fa8' }}>{label}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Right: Quote + Word side by side */}
+          <div className="hidden lg:grid grid-cols-2 gap-3 lg:w-[440px] xl:w-[500px] flex-shrink-0">
+            <QuoteCard quote={sessionQuote} />
+            <WordCard word={sessionWord} />
+          </div>
         </div>
 
         {/* Two-column layout */}
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-8">
 
           {/* Left: main content */}
-          <div className="lg:col-span-2 space-y-10">
+          <div className="lg:col-span-2 space-y-8">
 
             {/* Currently Reading */}
             {currentlyReading.length > 0 && (
@@ -572,9 +581,7 @@ export default function DashboardPage() {
           {/* Right: sidebar */}
           <div className="lg:border-l lg:pl-6" style={{ borderColor: '#2a2d3e' }}>
             <div className="space-y-4">
-              <QuoteCard quote={sessionQuote} />
               <ReadingGoalWidget finishedCount={stats.finished} />
-              <WordCard word={sessionWord} />
               <UpNextCard entries={entries} loading={libraryLoading} />
               <DidYouKnowCard fact={sessionDyk} />
               <QuickActionsCard />
