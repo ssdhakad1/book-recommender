@@ -199,7 +199,7 @@ function ReadingGoalWidget({ finishedCount }) {
 
 function QuoteCard({ quote }) {
   return (
-    <div className="flex-1 min-w-0 rounded-2xl border px-4 py-3 flex flex-col overflow-hidden" style={{ backgroundColor: '#1a1d27', borderColor: 'rgba(99,102,241,0.3)' }}>
+    <div className="flex-1 min-w-0 rounded-2xl border px-4 py-3 flex flex-col overflow-hidden h-full" style={{ backgroundColor: '#1a1d27', borderColor: 'rgba(99,102,241,0.3)' }}>
       <div className="flex items-center gap-1.5 mb-2 flex-shrink-0">
         <Quote className="w-3 h-3 flex-shrink-0" style={{ color: '#818cf8' }} />
         <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#818cf8' }}>Quote of the Session</span>
@@ -214,7 +214,7 @@ function QuoteCard({ quote }) {
 
 function WordCard({ word }) {
   return (
-    <div className="flex-1 min-w-0 rounded-2xl border px-4 py-3 flex flex-col overflow-hidden" style={{ backgroundColor: '#1a1d27', borderColor: '#2a2d3e' }}>
+    <div className="flex-1 min-w-0 rounded-2xl border px-4 py-3 flex flex-col overflow-hidden h-full" style={{ backgroundColor: '#1a1d27', borderColor: '#2a2d3e' }}>
       <div className="flex items-center gap-1.5 mb-2 flex-shrink-0">
         <span className="text-xs font-bold px-1.5 py-0.5 rounded flex-shrink-0" style={{ backgroundColor: 'rgba(74,222,128,0.1)', color: '#4ade80' }}>Aa</span>
         <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#4ade80' }}>Word of the Session</span>
@@ -486,7 +486,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Right: Quote + Word side by side */}
-          <div className="hidden lg:flex gap-3 lg:w-[460px] xl:w-[520px] flex-shrink-0 self-stretch">
+          <div className="hidden lg:flex gap-3 flex-shrink-0" style={{ width: '520px', height: '122px' }}>
             <QuoteCard quote={sessionQuote} />
             <WordCard word={sessionWord} />
           </div>
@@ -574,7 +574,7 @@ export default function DashboardPage() {
 
           {/* Right: sidebar */}
           <div className="lg:border-l lg:pl-6" style={{ borderColor: '#2a2d3e' }}>
-            <div className="space-y-4">
+            <div className="space-y-6">
               <ReadingGoalWidget finishedCount={stats.finished} />
               <UpNextCard entries={entries} loading={libraryLoading} />
               <BookTriviaSection initial={sessionTrivia} />
