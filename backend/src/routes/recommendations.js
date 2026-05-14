@@ -153,6 +153,14 @@ router.post('/', async (req, res) => {
   try {
     let items = [];
 
+    // Fetch all library entries for this user upfront (any status) so we can
+    // exclude already-library books from every recommendation mode.
+    const allLibraryEntries = await prisma.libraryEntry.findMany({
+      where: { userId: req.user.id },
+      include: { book: true },
+    });
+    const libraryTitles = new Set(allLibraryEntries.map(e => e.book.title.toLowerCase()));
+
     // ── By Author ──────────────────────────────────────────────────────────────
     // Strategy:
     //  1. Get up to 3 of the author's own top-rated works (taste, not a dump)
@@ -194,10 +202,12 @@ router.post('/', async (req, res) => {
         similarBooks.map(w =>
           mapWorkToBook(w, `Readers of ${authorName} also enjoy — ${topSubjects[0] || 'same themes'}`)
         ),
-        ownTitles
+        new Set([...ownTitles, ...libraryTitles])
       ).slice(0, wantSimilar);
 
-      items = dedupeBooks([...ownMapped, ...similarMapped]).slice(0, numLimit);
+      // Also filter own books against the library
+      const filteredOwn = ownMapped.filter(b => !libraryTitles.has((b.title || '').toLowerCase()));
+      items = dedupeBooks([...filteredOwn, ...similarMapped]).slice(0, numLimit);
     }
 
     // ── By Genre ───────────────────────────────────────────────────────────────
@@ -213,7 +223,7 @@ router.post('/', async (req, res) => {
 
       const fromSubject = subjectResults.map(w => mapWorkToBook(w, reason));
       const fromSearch = searchResults.map(d => mapWorkToBook(d, reason));
-      items = dedupeBooks([...fromSubject, ...fromSearch]).slice(0, numLimit);
+      items = dedupeBooks([...fromSubject, ...fromSearch], libraryTitles).slice(0, numLimit);
     }
 
     // ── By Mood ────────────────────────────────────────────────────────────────
@@ -233,7 +243,7 @@ router.post('/', async (req, res) => {
       );
 
       const allBooks = batches.flat().map(w => mapWorkToBook(w, reason));
-      items = dedupeBooks(allBooks).slice(0, numLimit);
+      items = dedupeBooks(allBooks, libraryTitles).slice(0, numLimit);
     }
 
     // ── By History ─────────────────────────────────────────────────────────────
@@ -247,12 +257,11 @@ router.post('/', async (req, res) => {
     //  4. Search those subjects, excluding already-read books
     //  5. Rank by how many of the user's subjects match
     else if (mode === 'history') {
-      const finishedEntries = await prisma.libraryEntry.findMany({
-        where: { userId: req.user.id, status: 'FINISHED' },
-        include: { book: true },
-        orderBy: { finishedAt: 'desc' },
-        take: 20,
-      });
+      // Use already-fetched library entries, filtered to FINISHED for history analysis
+      const finishedEntries = allLibraryEntries
+        .filter(e => e.status === 'FINISHED')
+        .sort((a, b) => new Date(b.finishedAt) - new Date(a.finishedAt))
+        .slice(0, 20);
 
       if (finishedEntries.length === 0) {
         return res.status(400).json({
@@ -266,8 +275,6 @@ router.post('/', async (req, res) => {
       });
       const reviewMap = {};
       reviews.forEach(r => { reviewMap[r.bookId] = r.rating; });
-
-      const finishedTitles = new Set(finishedEntries.map(e => e.book.title.toLowerCase()));
 
       // Build weighted author and genre lists
       const weightedAuthors = [];
@@ -327,8 +334,8 @@ router.post('/', async (req, res) => {
 
       const reason = `Based on your reading history (${allSubjects.slice(0, 2).join(', ')})`;
       const batches = await Promise.all(allSubjects.map(s => olSubjectSearch(s, numLimit)));
-      const combined = batches.flat().filter(w => !finishedTitles.has(w.title?.toLowerCase()));
-      items = dedupeBooks(combined.map(w => mapWorkToBook(w, reason))).slice(0, numLimit);
+      const combined = batches.flat().filter(w => !libraryTitles.has(w.title?.toLowerCase()));
+      items = dedupeBooks(combined.map(w => mapWorkToBook(w, reason)), libraryTitles).slice(0, numLimit);
     }
 
     if (items.length === 0) {
