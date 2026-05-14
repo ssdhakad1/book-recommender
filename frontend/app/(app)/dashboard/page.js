@@ -293,8 +293,8 @@ export default function DashboardPage() {
   const currentlyReading = entries.filter(e => e.status === 'READING').map(e => e.book);
 
   return (
-    <div className="min-h-screen pb-16" style={{ backgroundColor: '#0f1117' }}>
-      <div className="max-w-6xl mx-auto px-4 py-8">
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#0f1117' }}>
+      <div className="flex-1 flex flex-col max-w-6xl mx-auto w-full px-4 py-8 pb-16">
 
         {/* Greeting + Stats */}
         <div className="mb-10">
@@ -325,7 +325,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Two-column layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-8">
 
           {/* Left: main content */}
           <div className="lg:col-span-2 space-y-10">
