@@ -85,7 +85,7 @@ export default function SearchPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-1">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{backgroundColor:'rgba(99,102,241,0.15)', border:'1px solid rgba(99,102,241,0.2)'}}>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{backgroundColor:'rgba(99,102,241,0.12)'}}>
               <Search className="w-5 h-5 text-indigo-400" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight" style={{color:'#f0f0f5'}}>Search Books</h1>

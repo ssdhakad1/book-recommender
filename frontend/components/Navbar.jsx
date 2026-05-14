@@ -1,11 +1,12 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, LogOut, LayoutDashboard, Library, TrendingUp, Search } from 'lucide-react';
+import { BookOpen, LogOut, LayoutDashboard, Library, TrendingUp, Search, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const NAV_LINKS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/recommendations', label: 'Discover', icon: Sparkles },
   { href: '/library', label: 'Library', icon: Library },
   { href: '/trending', label: 'Trending', icon: TrendingUp },
   { href: '/search', label: 'Search', icon: Search },
@@ -20,8 +21,8 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
         {/* Logo */}
         <Link href="/dashboard" className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{backgroundColor:'#6366f1'}}>
-            <BookOpen className="w-5 h-5 text-white" />
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{backgroundColor:'#6366f1'}}>
+            <BookOpen className="w-4 h-4 text-white" />
           </div>
           <span className="font-bold text-base" style={{color:'#f0f0f5'}}>BookRecommender</span>
         </Link>
