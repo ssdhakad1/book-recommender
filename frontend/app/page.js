@@ -131,9 +131,18 @@ export default function HomePage() {
         {/* Live trending preview */}
         {previewBooks.length > 0 && (
           <div className="w-full max-w-4xl">
-            <h2 className="text-base font-bold tracking-tight mb-4" style={{ color: '#f0f0f5' }}>
-              What readers are loving right now
-            </h2>
+            <div className="flex items-center gap-2.5 mb-5">
+              <div
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold flex-shrink-0"
+                style={{ backgroundColor: 'rgba(245,158,11,0.1)', borderColor: 'rgba(245,158,11,0.25)', color: '#f59e0b' }}
+              >
+                <TrendingUp className="w-3 h-3" />
+                Trending
+              </div>
+              <h2 className="text-sm font-bold tracking-tight" style={{ color: '#f0f0f5' }}>
+                What readers are loving right now
+              </h2>
+            </div>
 
             <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               {previewBooks.map((book, idx) => (
