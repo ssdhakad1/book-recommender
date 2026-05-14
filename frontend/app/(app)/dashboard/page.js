@@ -486,7 +486,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Right: Quote + Word side by side */}
-          <div className="hidden lg:flex gap-3 flex-shrink-0" style={{ width: '520px', height: '140px' }}>
+          <div className="hidden lg:flex gap-3 flex-shrink-0" style={{ width: '520px', height: '130px' }}>
             <QuoteCard quote={sessionQuote} />
             <WordCard word={sessionWord} />
           </div>
