@@ -65,10 +65,10 @@ export default function Navbar() {
               onClick={logout}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all hover:bg-[#1a1d27]"
               style={{color:'#8b8fa8'}}
-              title="Sign out"
+              title="Sign Out"
             >
               <LogOut className="w-4 h-4" />
-              <span className="hidden md:block">Sign out</span>
+              <span className="hidden md:block">Sign Out</span>
             </button>
           </div>
         )}
