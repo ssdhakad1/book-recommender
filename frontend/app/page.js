@@ -131,14 +131,9 @@ export default function HomePage() {
         {/* Live trending preview */}
         {previewBooks.length > 0 && (
           <div className="w-full max-w-4xl">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-bold tracking-tight" style={{ color: '#f0f0f5' }}>
-                What readers are loving right now
-              </h2>
-              <Link href="/register" className="text-xs font-medium hover:text-indigo-300 transition-colors flex-shrink-0" style={{ color: '#8b8fa8' }}>
-                Sign up to track →
-              </Link>
-            </div>
+            <h2 className="text-base font-bold tracking-tight mb-4" style={{ color: '#f0f0f5' }}>
+              What readers are loving right now
+            </h2>
 
             <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               {previewBooks.map((book, idx) => (
@@ -156,7 +151,7 @@ export default function HomePage() {
                       </div>
                     )}
                     {book.rank && book.rank <= 3 && (
-                      <div className="absolute top-1 left-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold" style={{ backgroundColor: '#f59e0b', color: '#0f1117' }}>
+                      <div className="absolute top-1.5 left-1.5 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" style={{ backgroundColor: '#f59e0b', color: '#0f1117' }}>
                         {book.rank}
                       </div>
                     )}
