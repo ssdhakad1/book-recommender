@@ -95,9 +95,7 @@ export default function RecommendationsPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-1">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'rgba(99,102,241,0.12)' }}>
-              <Sparkles className="w-5 h-5 text-indigo-400" />
-            </div>
+            <Sparkles className="w-6 h-6" style={{ color: '#818cf8' }} />
             <h1 className="text-2xl font-bold tracking-tight" style={{ color: '#f0f0f5' }}>Book Recommendations</h1>
           </div>
           <p className="text-sm ml-12" style={{ color: '#8b8fa8' }}>Get personalised AI-powered book suggestions</p>

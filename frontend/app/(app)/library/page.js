@@ -196,9 +196,7 @@ export default function LibraryPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-1">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{backgroundColor:'rgba(34,197,94,0.1)'}}>
-              <Library className="w-5 h-5 text-green-400" />
-            </div>
+            <Library className="w-6 h-6" style={{color:'#4ade80'}} />
             <h1 className="text-2xl font-bold tracking-tight" style={{color:'#f0f0f5'}}>My Library</h1>
           </div>
           <p className="text-sm ml-12" style={{color:'#8b8fa8'}}>{entries.length} books in your collection</p>
