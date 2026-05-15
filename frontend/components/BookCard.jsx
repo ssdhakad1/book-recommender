@@ -61,7 +61,7 @@ export default function BookCard({ book, isInLibrary = false, onAddToLibrary }) 
         {book.averageRating && (
           <div className="flex items-center gap-1 mb-2">
             <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-            <span className="text-xs text-amber-400">{book.averageRating}</span>
+            <span className="text-xs text-amber-400">{Number(book.averageRating).toFixed(1)}</span>
           </div>
         )}
 
