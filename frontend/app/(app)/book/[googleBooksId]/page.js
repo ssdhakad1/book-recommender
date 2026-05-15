@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { BookOpen, Star, Calendar, Hash, ShoppingBag, Plus, Check, ChevronLeft, FileText } from 'lucide-react';
 import { books as booksApi, library as libraryApi } from '../../../../lib/api';
+import { addRecentlyViewed } from '../../../../lib/recentlyViewed';
 import BookSourcesModal from '../../../../components/BookSourcesModal';
 
 async function fetchOpenLibraryBook(rawId) {
@@ -91,6 +92,7 @@ export default function BookDetailPage() {
         bookData = data.book;
       }
       setBook(bookData);
+      addRecentlyViewed(bookData);
 
       // Check if already in library
       try {

@@ -27,6 +27,12 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Friendly rate-limit message
+    if (error.response?.status === 429) {
+      return Promise.reject(
+        new Error("You're moving fast — please wait a moment and try again.")
+      );
+    }
     const message =
       error.response?.data?.error ||
       error.response?.data?.message ||
@@ -49,6 +55,12 @@ export const auth = {
 
   deleteAccount: () =>
     api.delete('/api/auth/account').then((r) => r.data),
+
+  forgotPassword: (email) =>
+    api.post('/api/auth/forgot-password', { email }).then((r) => r.data),
+
+  resetPassword: (token, password) =>
+    api.post('/api/auth/reset-password', { token, password }).then((r) => r.data),
 };
 
 // Books API
@@ -65,11 +77,20 @@ export const library = {
   getLibrary: () =>
     api.get('/api/library').then((r) => r.data),
 
+  getStats: () =>
+    api.get('/api/library/stats').then((r) => r.data),
+
   addToLibrary: (bookData) =>
     api.post('/api/library', bookData).then((r) => r.data),
 
   updateLibraryEntry: (entryId, status) =>
     api.patch(`/api/library/${entryId}`, { status }).then((r) => r.data),
+
+  updateProgress: (entryId, currentPage) =>
+    api.patch(`/api/library/${entryId}`, { currentPage }).then((r) => r.data),
+
+  updateNotes: (entryId, notes) =>
+    api.patch(`/api/library/${entryId}`, { notes }).then((r) => r.data),
 
   removeFromLibrary: (entryId) =>
     api.delete(`/api/library/${entryId}`).then((r) => r.data),

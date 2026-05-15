@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { QUOTES, WORDS, DID_YOU_KNOW, TRIVIA } from './dailyContent';
 import { recommendations as recApi, library as libraryApi } from '../../../lib/api';
+import { getRecentlyViewed } from '../../../lib/recentlyViewed';
 import HorizontalBookScroll from '../../../components/HorizontalBookScroll';
 import { useAuth } from '../../../context/AuthContext';
 
@@ -354,6 +355,52 @@ function UpNextCard({ entries, loading }) {
   );
 }
 
+// ── Recently Viewed widget ────────────────────────────────────────────────────
+
+function RecentlyViewedCard() {
+  const [books, setBooks] = useState([]);
+
+  useEffect(() => {
+    setBooks(getRecentlyViewed());
+  }, []);
+
+  if (books.length === 0) return null;
+
+  return (
+    <div className="rounded-2xl border p-5" style={{ backgroundColor: '#1a1d27', borderColor: '#2a2d3e' }}>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <BookOpen className="w-4 h-4" style={{ color: '#818cf8' }} />
+          <span className="text-sm font-semibold" style={{ color: '#f0f0f5' }}>Recently Viewed</span>
+        </div>
+      </div>
+      <div className="space-y-3">
+        {books.map((book) => (
+          <Link
+            key={book.googleBooksId}
+            href={`/book/${book.googleBooksId}`}
+            className="flex items-center gap-3 group"
+          >
+            <div className="w-9 h-12 rounded-lg flex-shrink-0 overflow-hidden relative" style={{ backgroundColor: '#2a2d3e' }}>
+              {book.coverUrl ? (
+                <Image src={book.coverUrl} alt={book.title || ''} fill className="object-cover" unoptimized />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <BookOpen className="w-3.5 h-3.5" style={{ color: '#4a4d62' }} />
+                </div>
+              )}
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-medium leading-snug line-clamp-2 group-hover:text-indigo-400 transition-colors" style={{ color: '#f0f0f5' }}>{book.title}</p>
+              <p className="text-xs truncate mt-0.5" style={{ color: '#6b7280' }}>{book.author}</p>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Quick Actions widget ───────────────────────────────────────────────────────
 
 const QUICK_ACTIONS = [
@@ -655,6 +702,7 @@ export default function DashboardPage() {
             <div className="space-y-8">
               <ReadingGoalWidget finishedCount={stats.finished} />
               <UpNextCard entries={entries} loading={libraryLoading} />
+              <RecentlyViewedCard />
               <BookTriviaSection initial={sessionTrivia} />
               <DidYouKnowCard fact={sessionDyk} />
               <QuickActionsCard />

@@ -11,14 +11,16 @@ datasource db {
 }
 
 model User {
-  id           String         @id @default(cuid())
-  email        String         @unique
-  passwordHash String
-  name         String
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  libraryEntries LibraryEntry[]
-  reviews      Review[]
+  id               String         @id @default(cuid())
+  email            String         @unique
+  passwordHash     String
+  name             String
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  resetToken       String?
+  resetTokenExpiry DateTime?
+  libraryEntries   LibraryEntry[]
+  reviews          Review[]
 }
 
 model Book {
@@ -46,15 +48,17 @@ enum LibraryStatus {
 }
 
 model LibraryEntry {
-  id         String        @id @default(cuid())
-  userId     String
-  bookId     String
-  status     LibraryStatus @default(WISHLIST)
-  addedAt    DateTime      @default(now())
-  startedAt  DateTime?
-  finishedAt DateTime?
-  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  book       Book          @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  id          String        @id @default(cuid())
+  userId      String
+  bookId      String
+  status      LibraryStatus @default(WISHLIST)
+  addedAt     DateTime      @default(now())
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  currentPage Int?
+  notes       String?
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book        Book          @relation(fields: [bookId], references: [id], onDelete: Cascade)
 
   @@unique([userId, bookId])
 }

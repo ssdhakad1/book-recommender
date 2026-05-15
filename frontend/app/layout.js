@@ -1,5 +1,6 @@
 import './globals.css';
 import { AuthProvider } from '../context/AuthContext';
+import { ToastProvider } from '../context/ToastContext';
 import NavbarWrapper from '../components/NavbarWrapper';
 
 export const metadata = {
@@ -12,10 +13,12 @@ export default function RootLayout({ children }) {
     <html lang="en" style={{ backgroundColor: '#0f1117' }}>
       <body className="min-h-screen bg-[#0f1117] text-[#f0f0f5] antialiased">
         <AuthProvider>
-          <NavbarWrapper />
-          {/* Spacer so content is not hidden behind fixed navbar */}
-          <div id="navbar-spacer" />
-          <main>{children}</main>
+          <ToastProvider>
+            <NavbarWrapper />
+            {/* Spacer so content is not hidden behind fixed navbar */}
+            <div id="navbar-spacer" />
+            <main>{children}</main>
+          </ToastProvider>
         </AuthProvider>
       </body>
     </html>

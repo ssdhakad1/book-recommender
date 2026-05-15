@@ -24,6 +24,26 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/library/stats — aggregated stats for the current user
+router.get('/stats', async (req, res) => {
+  try {
+    const [entries, reviews] = await Promise.all([
+      prisma.libraryEntry.findMany({
+        where: { userId: req.user.id },
+        include: { book: true },
+      }),
+      prisma.review.findMany({
+        where: { userId: req.user.id },
+      }),
+    ]);
+
+    res.json({ entries, reviews });
+  } catch (err) {
+    console.error('Stats error:', err);
+    res.status(500).json({ error: 'Failed to fetch stats.' });
+  }
+});
+
 // POST /api/library — add book to library
 router.post('/', async (req, res) => {
   const {
@@ -124,14 +144,20 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PATCH /api/library/:entryId — update status
+// PATCH /api/library/:entryId — update status, currentPage, and/or notes
 router.patch('/:entryId', async (req, res) => {
   const { entryId } = req.params;
-  const { status } = req.body;
+  const { status, currentPage, notes } = req.body;
 
-  const validStatus = ['WISHLIST', 'READING', 'FINISHED'];
-  if (!validStatus.includes(status)) {
-    return res.status(400).json({ error: 'Invalid status. Must be WISHLIST, READING, or FINISHED.' });
+  if (status === undefined && currentPage === undefined && notes === undefined) {
+    return res.status(400).json({ error: 'No update fields provided.' });
+  }
+
+  if (status !== undefined) {
+    const validStatus = ['WISHLIST', 'READING', 'FINISHED'];
+    if (!validStatus.includes(status)) {
+      return res.status(400).json({ error: 'Invalid status. Must be WISHLIST, READING, or FINISHED.' });
+    }
   }
 
   try {
@@ -145,12 +171,20 @@ router.patch('/:entryId', async (req, res) => {
       return res.status(403).json({ error: 'Not authorized to update this entry.' });
     }
 
-    const updateData = { status };
-    if (status === 'READING' && !entry.startedAt) {
-      updateData.startedAt = new Date();
+    const updateData = {};
+
+    if (status !== undefined) {
+      updateData.status = status;
+      if (status === 'READING' && !entry.startedAt) updateData.startedAt = new Date();
+      if (status === 'FINISHED' && !entry.finishedAt) updateData.finishedAt = new Date();
     }
-    if (status === 'FINISHED' && !entry.finishedAt) {
-      updateData.finishedAt = new Date();
+
+    if (currentPage !== undefined) {
+      updateData.currentPage = currentPage !== null ? parseInt(currentPage, 10) : null;
+    }
+
+    if (notes !== undefined) {
+      updateData.notes = typeof notes === 'string' ? notes : null;
     }
 
     const updated = await prisma.libraryEntry.update({
