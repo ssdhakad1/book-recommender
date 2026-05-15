@@ -62,7 +62,7 @@ export default function BookCard({ book, isInLibrary = false, onAddToLibrary }) 
           <Star className={`w-3 h-3 ${book.averageRating ? 'text-amber-400 fill-amber-400' : ''}`} style={book.averageRating ? {} : {color:'#2a2d3e'}} />
           {book.averageRating
             ? <span className="text-xs text-amber-400">{Number(book.averageRating).toFixed(1)}</span>
-            : <span className="text-xs" style={{color:'#4a4d62'}}>No rating</span>
+            : <span className="text-xs" style={{color:'#4a4d62'}}>No Rating</span>
           }
         </div>
 
