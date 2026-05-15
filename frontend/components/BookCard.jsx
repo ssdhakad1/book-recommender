@@ -1,12 +1,12 @@
 'use client';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { BookOpen, Star, Plus, Check, ShoppingBag } from 'lucide-react';
+import { BookOpen, Star, Plus, Check, ShoppingBag, Sparkles } from 'lucide-react';
 import { library as libraryApi } from '../lib/api';
 import { useState } from 'react';
 import BookSourcesModal from './BookSourcesModal';
 
-export default function BookCard({ book, isInLibrary = false, onAddToLibrary }) {
+export default function BookCard({ book, isInLibrary = false, onAddToLibrary, tasteMatch = false }) {
   const router = useRouter();
   const [adding, setAdding] = useState(false);
   const [inLib, setInLib] = useState(isInLibrary);
@@ -48,6 +48,17 @@ export default function BookCard({ book, isInLibrary = false, onAddToLibrary }) 
           <div className="absolute inset-0 flex flex-col items-center justify-center p-4 gap-2">
             <BookOpen className="w-10 h-10" style={{color:'#2a2d3e'}} />
             <span className="text-xs text-center font-medium leading-tight" style={{color:'#4a4d62'}}>{book.title}</span>
+          </div>
+        )}
+        {tasteMatch && (
+          <div className="absolute top-2 left-0 right-0 flex justify-center">
+            <span
+              className="flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full"
+              style={{backgroundColor:'rgba(99,102,241,0.92)', color:'#fff', backdropFilter:'blur(4px)'}}
+            >
+              <Sparkles size={10} />
+              Matches your taste
+            </span>
           </div>
         )}
       </div>

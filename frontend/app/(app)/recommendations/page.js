@@ -294,14 +294,19 @@ export default function RecommendationsPage() {
               {results.length} Recommendations for You
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {results.map((book, idx) => (
-                <BookCard
-                  key={`${book.googleBooksId || book.title}-${idx}`}
-                  book={book}
-                  onAddToLibrary={handleAddToLibrary}
-                  isInLibrary={book.googleBooksId ? libraryBookIds.has(book.googleBooksId) : false}
-                />
-              ))}
+              {results.map((book, idx) => {
+                const bookGenres = (book.genres || []).map(g => g.toLowerCase());
+                const tasteMatch = savedGenres.length > 0 && savedGenres.some(g => bookGenres.includes(g.toLowerCase()));
+                return (
+                  <BookCard
+                    key={`${book.googleBooksId || book.title}-${idx}`}
+                    book={book}
+                    onAddToLibrary={handleAddToLibrary}
+                    isInLibrary={book.googleBooksId ? libraryBookIds.has(book.googleBooksId) : false}
+                    tasteMatch={tasteMatch}
+                  />
+                );
+              })}
             </div>
           </div>
         )}
