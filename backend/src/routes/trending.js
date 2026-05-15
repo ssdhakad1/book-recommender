@@ -142,13 +142,15 @@ async function enrichBook(title, author) {
 }
 
 async function buildTrendingList() {
-  const selectedBooks = getDailySelection();
+  // Sort by original rank so the 40 rotating picks appear in a sensible order,
+  // then re-assign sequential display ranks 1–50.
+  const selectedBooks = getDailySelection().sort((a, b) => a.rank - b.rank);
   const enriched = [];
   for (let i = 0; i < selectedBooks.length; i++) {
     const book = selectedBooks[i];
     const data = await enrichBook(book.title, book.author);
     enriched.push({
-      rank: book.rank,
+      rank: i + 1,
       title: data?.title || book.title,
       author: data?.author || book.author,
       genres: data?.genres?.length ? data.genres : book.genres,
@@ -180,8 +182,8 @@ router.get('/', async (req, res) => {
   } catch (err) {
     console.error('Trending error:', err);
     if (cache.data) return res.json({ books: cache.data, cached: true, stale: true });
-    const selection = getDailySelection();
-    const bare = selection.map((b) => ({ ...b, coverUrl: null, googleBooksId: null, description: '', buyLink: `https://www.google.com/search?q=${encodeURIComponent(b.title + ' ' + b.author + ' buy')}` }));
+    const selection = getDailySelection().sort((a, b) => a.rank - b.rank);
+    const bare = selection.map((b, i) => ({ ...b, rank: i + 1, coverUrl: null, googleBooksId: null, description: '', buyLink: `https://www.google.com/search?q=${encodeURIComponent(b.title + ' ' + b.author + ' buy')}` }));
     res.json({ books: bare, cached: false });
   }
 });
