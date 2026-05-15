@@ -1,14 +1,16 @@
 'use client';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { BookOpen, Star, Plus, Check } from 'lucide-react';
+import { BookOpen, Star, Plus, Check, ShoppingBag } from 'lucide-react';
 import { library as libraryApi } from '../lib/api';
 import { useState } from 'react';
+import BookSourcesModal from './BookSourcesModal';
 
 export default function BookCard({ book, isInLibrary = false, onAddToLibrary }) {
   const router = useRouter();
   const [adding, setAdding] = useState(false);
   const [inLib, setInLib] = useState(isInLibrary);
+  const [showSources, setShowSources] = useState(false);
 
   const handleAdd = async (e) => {
     e.stopPropagation();
@@ -99,7 +101,21 @@ export default function BookCard({ book, isInLibrary = false, onAddToLibrary }) 
             <><Plus className="w-3.5 h-3.5" /> Add to Library</>
           )}
         </button>
+
+        {/* Find & Buy button */}
+        <button
+          onClick={(e) => { e.stopPropagation(); setShowSources(true); }}
+          className="w-full py-1.5 rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-1.5 mt-1.5 hover:bg-[#2a2d3e]"
+          style={{ color: '#8b8fa8', backgroundColor: 'transparent', border: '1px solid #2a2d3e' }}
+        >
+          <ShoppingBag className="w-3 h-3" />
+          Find &amp; Buy
+        </button>
       </div>
+
+      {showSources && (
+        <BookSourcesModal book={book} onClose={() => setShowSources(false)} />
+      )}
     </div>
   );
 }

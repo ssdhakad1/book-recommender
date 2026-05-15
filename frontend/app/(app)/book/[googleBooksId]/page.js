@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { BookOpen, Star, Calendar, Hash, ExternalLink, Plus, Check, ChevronLeft, FileText } from 'lucide-react';
+import { BookOpen, Star, Calendar, Hash, ShoppingBag, Plus, Check, ChevronLeft, FileText } from 'lucide-react';
 import { books as booksApi, library as libraryApi } from '../../../../lib/api';
+import BookSourcesModal from '../../../../components/BookSourcesModal';
 
 async function fetchOpenLibraryBook(rawId) {
   // rawId is like "OL_OL123456W" — strip the "OL_" prefix
@@ -76,6 +77,7 @@ export default function BookDetailPage() {
   const [error, setError] = useState('');
   const [isInLibrary, setIsInLibrary] = useState(false);
   const [addingToLibrary, setAddingToLibrary] = useState(false);
+  const [showSources, setShowSources] = useState(false);
 
   useEffect(() => {
     async function fetchBook() {
@@ -277,24 +279,22 @@ export default function BookDetailPage() {
                 {isInLibrary ? 'In Library' : 'Add to Library'}
               </button>
 
-              {book.buyLink && (
-                <a
-                  href={book.buyLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all border"
-                  style={{backgroundColor:'transparent', borderColor:'#2a2d3e', color:'#8b8fa8'}}
-                  onMouseEnter={e => e.currentTarget.style.backgroundColor='#1a1d27'}
-                  onMouseLeave={e => e.currentTarget.style.backgroundColor='transparent'}
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Buy / Find
-                </a>
-              )}
+              <button
+                onClick={() => setShowSources(true)}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all border hover:bg-[#1a1d27]"
+                style={{backgroundColor:'transparent', borderColor:'#2a2d3e', color:'#8b8fa8'}}
+              >
+                <ShoppingBag className="w-4 h-4" />
+                Find &amp; Buy
+              </button>
             </div>
           </div>
         </div>
       </div>
+
+      {showSources && book && (
+        <BookSourcesModal book={book} onClose={() => setShowSources(false)} />
+      )}
     </div>
   );
 }
