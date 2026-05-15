@@ -24,34 +24,35 @@ export default function TrendingPage() {
   const [error, setError] = useState('');
   const [libraryBookIds, setLibraryBookIds] = useState(new Set());
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const [trendingData, libraryData] = await Promise.allSettled([
-          trendingApi.getTrending(),
-          libraryApi.getLibrary(),
-        ]);
+  const fetchData = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [trendingData, libraryData] = await Promise.allSettled([
+        trendingApi.getTrending(),
+        libraryApi.getLibrary(),
+      ]);
 
-        if (trendingData.status === 'fulfilled') {
-          setBooks(trendingData.value.books || []);
-        } else {
-          setError(trendingData.reason?.message || 'Failed to load trending books.');
-        }
-
-        if (libraryData.status === 'fulfilled') {
-          const ids = new Set(
-            (libraryData.value.entries || [])
-              .map((e) => e.book?.googleBooksId)
-              .filter(Boolean)
-          );
-          setLibraryBookIds(ids);
-        }
-      } finally {
-        setLoading(false);
+      if (trendingData.status === 'fulfilled') {
+        setBooks(trendingData.value.books || []);
+      } else {
+        setError('Could not load trending books. Please try again.');
       }
+
+      if (libraryData.status === 'fulfilled') {
+        const ids = new Set(
+          (libraryData.value.entries || [])
+            .map((e) => e.book?.googleBooksId)
+            .filter(Boolean)
+        );
+        setLibraryBookIds(ids);
+      }
+    } finally {
+      setLoading(false);
     }
-    fetchData();
-  }, []);
+  };
+
+  useEffect(() => { fetchData(); }, []);
 
   const handleAddToLibrary = async (book) => {
     try {
@@ -80,8 +81,17 @@ export default function TrendingPage() {
         </div>
 
         {error && (
-          <div className="border text-red-400 px-4 py-3 rounded-xl mb-6 text-sm" style={{backgroundColor:'rgba(239,68,68,0.1)', borderColor:'rgba(239,68,68,0.3)'}}>
-            {error}
+          <div className="rounded-2xl border px-6 py-10 text-center" style={{backgroundColor:'rgba(239,68,68,0.05)', borderColor:'rgba(239,68,68,0.2)'}}>
+            <TrendingUp className="w-8 h-8 mx-auto mb-3 opacity-40" style={{color:'#ef4444'}} />
+            <p className="text-sm font-medium mb-1" style={{color:'#f0f0f5'}}>Couldn't load trending books</p>
+            <p className="text-xs mb-5" style={{color:'#8b8fa8'}}>This usually resolves itself — give it another try.</p>
+            <button
+              onClick={fetchData}
+              className="px-5 py-2 rounded-xl text-sm font-medium text-white transition-all hover:opacity-90"
+              style={{backgroundColor:'#6366f1'}}
+            >
+              Try Again
+            </button>
           </div>
         )}
 

@@ -13,6 +13,7 @@ export default function HomePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [previewBooks, setPreviewBooks] = useState([]);
+  const [previewLoading, setPreviewLoading] = useState(true);
 
   useEffect(() => {
     if (!loading && user) router.replace('/dashboard');
@@ -25,7 +26,9 @@ export default function HomePage() {
         const res = await fetch(`${API_URL}/api/trending`);
         const data = await res.json();
         setPreviewBooks((data.books || []).slice(0, 8));
-      } catch { /* non-critical */ }
+      } catch { /* non-critical */ } finally {
+        setPreviewLoading(false);
+      }
     }
     fetchPreview();
   }, [loading, user]);
@@ -128,8 +131,8 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Live trending preview */}
-        {previewBooks.length > 0 && (
+        {/* Live trending preview — always shown (skeletons while loading) */}
+        {!user && (
           <div className="w-full max-w-4xl">
             <div className="flex items-center gap-2.5 mb-5">
               <div
@@ -145,32 +148,47 @@ export default function HomePage() {
             </div>
 
             <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-              {previewBooks.map((book, idx) => (
-                <div
-                  key={`${book.googleBooksId || book.title}-${idx}`}
-                  className="flex-shrink-0 w-24 rounded-xl border overflow-hidden transition-all hover:border-indigo-500/30"
-                  style={{ backgroundColor: '#1a1d27', borderColor: '#2a2d3e' }}
-                >
-                  <div className="relative aspect-[2/3] w-full" style={{ backgroundColor: '#2a2d3e' }}>
-                    {book.coverUrl ? (
-                      <Image src={book.coverUrl} alt={book.title || 'Book'} fill className="object-cover" unoptimized />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <BookOpen className="w-6 h-6" style={{ color: '#4a4d62' }} />
+              {previewLoading
+                ? Array.from({ length: 8 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="flex-shrink-0 w-24 rounded-xl border overflow-hidden animate-pulse"
+                      style={{ backgroundColor: '#1a1d27', borderColor: '#2a2d3e' }}
+                    >
+                      <div className="aspect-[2/3] w-full" style={{ backgroundColor: '#2a2d3e' }} />
+                      <div className="p-1.5 space-y-1.5">
+                        <div className="h-2.5 rounded" style={{ backgroundColor: '#2a2d3e', width: '80%' }} />
+                        <div className="h-2 rounded" style={{ backgroundColor: '#2a2d3e', width: '55%' }} />
                       </div>
-                    )}
-                    {book.rank && book.rank <= 3 && (
-                      <div className="absolute top-1.5 left-1.5 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" style={{ backgroundColor: '#f59e0b', color: '#0f1117' }}>
-                        {book.rank}
+                    </div>
+                  ))
+                : previewBooks.map((book, idx) => (
+                    <div
+                      key={`${book.googleBooksId || book.title}-${idx}`}
+                      className="flex-shrink-0 w-24 rounded-xl border overflow-hidden transition-all hover:border-indigo-500/30"
+                      style={{ backgroundColor: '#1a1d27', borderColor: '#2a2d3e' }}
+                    >
+                      <div className="relative aspect-[2/3] w-full" style={{ backgroundColor: '#2a2d3e' }}>
+                        {book.coverUrl ? (
+                          <Image src={book.coverUrl} alt={book.title || 'Book'} fill className="object-cover" unoptimized />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <BookOpen className="w-6 h-6" style={{ color: '#4a4d62' }} />
+                          </div>
+                        )}
+                        {book.rank && book.rank <= 3 && (
+                          <div className="absolute top-1.5 left-1.5 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" style={{ backgroundColor: '#f59e0b', color: '#0f1117' }}>
+                            {book.rank}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  <div className="p-1.5">
-                    <p className="text-xs font-medium line-clamp-2 leading-tight" style={{ color: '#f0f0f5' }}>{book.title}</p>
-                    <p className="text-xs mt-0.5 truncate" style={{ color: '#6b7280' }}>{book.author}</p>
-                  </div>
-                </div>
-              ))}
+                      <div className="p-1.5">
+                        <p className="text-xs font-medium line-clamp-2 leading-tight" style={{ color: '#f0f0f5' }}>{book.title}</p>
+                        <p className="text-xs mt-0.5 truncate" style={{ color: '#6b7280' }}>{book.author}</p>
+                      </div>
+                    </div>
+                  ))
+              }
             </div>
 
             <p className="text-center text-xs mt-4" style={{ color: '#4a4d62' }}>
