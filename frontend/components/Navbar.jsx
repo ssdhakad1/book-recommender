@@ -1,38 +1,109 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { BookOpen, LogOut, LayoutDashboard, Library, TrendingUp, Search, Sparkles, BarChart2, Menu, X } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import {
+  BookOpen, LogOut, LayoutDashboard, Library, TrendingUp,
+  Search, Sparkles, BarChart2, Menu, X, User, Trash2, AlertTriangle,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const NAV_LINKS = [
-  { href: '/dashboard',        label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/recommendations',  label: 'Discover',  icon: Sparkles        },
-  { href: '/library',          label: 'Library',   icon: Library         },
-  { href: '/stats',            label: 'Stats',     icon: BarChart2       },
-  { href: '/trending',         label: 'Trending',  icon: TrendingUp      },
-  { href: '/search',           label: 'Search',    icon: Search          },
+  { href: '/dashboard',       label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/recommendations', label: 'Discover',  icon: Sparkles        },
+  { href: '/library',         label: 'Library',   icon: Library         },
+  { href: '/stats',           label: 'Stats',     icon: BarChart2       },
+  { href: '/trending',        label: 'Trending',  icon: TrendingUp      },
+  { href: '/search',          label: 'Search',    icon: Search          },
 ];
+
+// ── Delete Account Modal ──────────────────────────────────────────────────────
+
+function DeleteAccountModal({ onClose, onConfirm, loading }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{backgroundColor:'rgba(0,0,0,0.75)', backdropFilter:'blur(4px)'}}>
+      <div className="rounded-2xl border p-6 max-w-sm w-full" style={{backgroundColor:'#1a1d27', borderColor:'#2a2d3e'}}>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{backgroundColor:'rgba(239,68,68,0.12)'}}>
+            <AlertTriangle className="w-5 h-5" style={{color:'#ef4444'}} />
+          </div>
+          <div>
+            <h3 className="font-bold text-sm" style={{color:'#f0f0f5'}}>Delete Account</h3>
+            <p className="text-xs" style={{color:'#8b8fa8'}}>This cannot be undone</p>
+          </div>
+        </div>
+        <p className="text-sm leading-relaxed mb-6" style={{color:'#8b8fa8'}}>
+          Your account, entire library, and all reviews will be permanently deleted. This action cannot be reversed.
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all hover:bg-[#0f1117] disabled:opacity-50"
+            style={{borderColor:'#2a2d3e', color:'#8b8fa8', backgroundColor:'transparent'}}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white transition-all hover:opacity-90 disabled:opacity-60 flex items-center justify-center gap-2"
+            style={{backgroundColor:'#ef4444'}}
+          >
+            {loading
+              ? <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />Deleting…</>
+              : 'Delete Account'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Navbar ────────────────────────────────────────────────────────────────────
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const router = useRouter();
+  const { user, logout, deleteAccount } = useAuth();
+
+  const [mobileOpen,     setMobileOpen]     = useState(false);
+  const [profileOpen,    setProfileOpen]    = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteLoading,  setDeleteLoading]  = useState(false);
+
+  const dropdownRef = useRef(null);
 
   // Close mobile menu on route change
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [pathname]);
+  useEffect(() => { setMobileOpen(false); setProfileOpen(false); }, [pathname]);
 
   // Prevent body scroll when mobile menu is open
   useEffect(() => {
-    if (mobileOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    document.body.style.overflow = mobileOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [mobileOpen]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!profileOpen) return;
+    function handleClick(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setProfileOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [profileOpen]);
+
+  const handleDeleteAccount = async () => {
+    setDeleteLoading(true);
+    try {
+      await deleteAccount();
+    } catch {
+      setDeleteLoading(false);
+      setShowDeleteModal(false);
+    }
+  };
 
   return (
     <>
@@ -68,23 +139,74 @@ export default function Navbar() {
 
           {/* Desktop user area */}
           {user && (
-            <div className="hidden md:flex items-center gap-3">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 cursor-default"
-                style={{backgroundColor:'rgba(99,102,241,0.2)', border:'1px solid rgba(99,102,241,0.35)'}}
-                title={user.name}
-              >
-                <span className="text-sm font-bold" style={{color:'#818cf8'}}>{user.name?.[0]?.toUpperCase() || 'U'}</span>
+            <div className="hidden md:flex items-center gap-2">
+              {/* Profile dropdown trigger */}
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setProfileOpen((v) => !v)}
+                  className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all hover:ring-2 hover:ring-indigo-500/50"
+                  style={{
+                    backgroundColor:'rgba(99,102,241,0.2)',
+                    border: `1px solid ${profileOpen ? 'rgba(99,102,241,0.6)' : 'rgba(99,102,241,0.35)'}`,
+                  }}
+                >
+                  <span className="text-sm font-bold" style={{color:'#818cf8'}}>{user.name?.[0]?.toUpperCase() || 'U'}</span>
+                </button>
+
+                {/* Dropdown */}
+                {profileOpen && (
+                  <div
+                    className="absolute top-full right-0 mt-2 w-64 rounded-2xl border shadow-2xl overflow-hidden"
+                    style={{backgroundColor:'#1a1d27', borderColor:'#2a2d3e', zIndex: 9999}}
+                  >
+                    {/* User info header */}
+                    <div className="px-4 py-4 border-b" style={{borderColor:'#2a2d3e'}}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{backgroundColor:'rgba(99,102,241,0.2)', border:'1px solid rgba(99,102,241,0.35)'}}>
+                          <span className="text-base font-bold" style={{color:'#818cf8'}}>{user.name?.[0]?.toUpperCase() || 'U'}</span>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold truncate" style={{color:'#f0f0f5'}}>{user.name}</p>
+                          {user.email && <p className="text-xs truncate mt-0.5" style={{color:'#6b7280'}}>{user.email}</p>}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Menu items */}
+                    <div className="p-2">
+                      <Link
+                        href="/profile"
+                        onClick={() => setProfileOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-[#0f1117] w-full"
+                        style={{color:'#8b8fa8'}}
+                      >
+                        <User className="w-4 h-4 flex-shrink-0" style={{color:'#818cf8'}} />
+                        View Profile
+                      </Link>
+                      <button
+                        onClick={() => { setProfileOpen(false); logout(); }}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-[#0f1117] w-full text-left"
+                        style={{color:'#8b8fa8'}}
+                      >
+                        <LogOut className="w-4 h-4 flex-shrink-0" />
+                        Sign Out
+                      </button>
+                    </div>
+
+                    {/* Danger zone */}
+                    <div className="p-2 border-t" style={{borderColor:'#2a2d3e'}}>
+                      <button
+                        onClick={() => { setProfileOpen(false); setShowDeleteModal(true); }}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all w-full text-left hover:bg-red-500/10"
+                        style={{color:'#ef4444'}}
+                      >
+                        <Trash2 className="w-4 h-4 flex-shrink-0" />
+                        Delete Account
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-              <button
-                onClick={logout}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-all hover:bg-[#1a1d27]"
-                style={{color:'#8b8fa8'}}
-                title="Sign Out"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>Sign Out</span>
-              </button>
             </div>
           )}
 
@@ -127,11 +249,7 @@ export default function Navbar() {
                 key={href}
                 href={href}
                 className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all"
-                style={
-                  active
-                    ? {backgroundColor:'rgba(99,102,241,0.12)', color:'#818cf8'}
-                    : {color:'#8b8fa8'}
-                }
+                style={active ? {backgroundColor:'rgba(99,102,241,0.12)', color:'#818cf8'} : {color:'#8b8fa8'}}
               >
                 <Icon className="w-4 h-4 flex-shrink-0" />
                 {label}
@@ -140,15 +258,26 @@ export default function Navbar() {
             );
           })}
 
-          {/* Mobile sign out */}
+          {/* Mobile user section */}
           {user && (
             <div className="pt-3 mt-3 border-t" style={{borderColor:'#2a2d3e'}}>
-              <div className="flex items-center gap-3 px-4 py-2 mb-2">
+              <div className="flex items-center gap-3 px-4 py-2 mb-1">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{backgroundColor:'rgba(99,102,241,0.2)', border:'1px solid rgba(99,102,241,0.35)'}}>
                   <span className="text-sm font-bold" style={{color:'#818cf8'}}>{user.name?.[0]?.toUpperCase() || 'U'}</span>
                 </div>
-                <span className="text-sm font-medium truncate" style={{color:'#f0f0f5'}}>{user.name}</span>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate" style={{color:'#f0f0f5'}}>{user.name}</p>
+                  {user.email && <p className="text-xs truncate" style={{color:'#6b7280'}}>{user.email}</p>}
+                </div>
               </div>
+              <Link
+                href="/profile"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all hover:bg-[#0f1117]"
+                style={{color:'#8b8fa8'}}
+              >
+                <User className="w-4 h-4 flex-shrink-0" style={{color:'#818cf8'}} />
+                View Profile
+              </Link>
               <button
                 onClick={logout}
                 className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all w-full hover:bg-[#0f1117]"
@@ -157,10 +286,27 @@ export default function Navbar() {
                 <LogOut className="w-4 h-4 flex-shrink-0" />
                 Sign Out
               </button>
+              <button
+                onClick={() => { setMobileOpen(false); setShowDeleteModal(true); }}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all w-full hover:bg-red-500/10"
+                style={{color:'#ef4444'}}
+              >
+                <Trash2 className="w-4 h-4 flex-shrink-0" />
+                Delete Account
+              </button>
             </div>
           )}
         </div>
       </div>
+
+      {/* Delete Account Modal */}
+      {showDeleteModal && (
+        <DeleteAccountModal
+          onClose={() => setShowDeleteModal(false)}
+          onConfirm={handleDeleteAccount}
+          loading={deleteLoading}
+        />
+      )}
     </>
   );
 }
