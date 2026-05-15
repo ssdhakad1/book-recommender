@@ -129,7 +129,9 @@ async function enrichBook(title, author) {
       title: doc.title || title,
       author: (doc.author_name || [author])[0],
       coverUrl: coverId ? `https://covers.openlibrary.org/b/id/${coverId}-M.jpg` : null,
-      genres: (doc.subject || []).slice(0, 4),
+      genres: (doc.subject || [])
+        .filter(s => !s.includes(':') && !s.includes('=') && s.length <= 40)
+        .slice(0, 4),
       publishedDate: doc.first_publish_year ? String(doc.first_publish_year) : null,
       averageRating: doc.ratings_average ? Math.round(doc.ratings_average * 10) / 10 : null,
       pageCount: doc.number_of_pages_median || null,
@@ -153,7 +155,7 @@ async function buildTrendingList() {
       rank: i + 1,
       title: data?.title || book.title,
       author: data?.author || book.author,
-      genres: data?.genres?.length ? data.genres : book.genres,
+      genres: (data?.genres?.length ? data.genres : book.genres).filter(s => !s.includes(':') && !s.includes('=')),
       description: '',
       coverUrl: data?.coverUrl || null,
       googleBooksId: data?.googleBooksId || null,
