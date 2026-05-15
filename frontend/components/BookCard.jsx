@@ -58,12 +58,13 @@ export default function BookCard({ book, isInLibrary = false, onAddToLibrary }) 
         <p className="text-xs mb-2" style={{color:'#8b8fa8'}}>{book.author}</p>
 
         {/* Rating */}
-        {book.averageRating && (
-          <div className="flex items-center gap-1 mb-2">
-            <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-            <span className="text-xs text-amber-400">{Number(book.averageRating).toFixed(1)}</span>
-          </div>
-        )}
+        <div className="flex items-center gap-1 mb-2">
+          <Star className={`w-3 h-3 ${book.averageRating ? 'text-amber-400 fill-amber-400' : ''}`} style={book.averageRating ? {} : {color:'#2a2d3e'}} />
+          {book.averageRating
+            ? <span className="text-xs text-amber-400">{Number(book.averageRating).toFixed(1)}</span>
+            : <span className="text-xs" style={{color:'#4a4d62'}}>No rating</span>
+          }
+        </div>
 
         {/* Reason */}
         {book.reason && (
