@@ -77,7 +77,7 @@ export default function TrendingPage() {
             <TrendingUp className="w-6 h-6" style={{color:'#f59e0b'}} />
             <h1 className="text-2xl font-bold tracking-tight" style={{color:'#f0f0f5'}}>Top 50 Trending</h1>
           </div>
-          <p className="text-sm ml-9" style={{color:'#8b8fa8'}}>Updated daily — discover what the reading community is engaging with</p>
+          <p className="text-sm ml-9" style={{color:'#8b8fa8'}}>Updated daily — discover what the reading community is engaging with.</p>
         </div>
 
         {error && (

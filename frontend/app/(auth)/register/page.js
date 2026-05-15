@@ -50,8 +50,8 @@ export default function RegisterPage() {
               </div>
               <span className="text-xl font-bold text-[#f0f0f5] tracking-tight">BookRecommender</span>
             </Link>
-            <h1 className="text-2xl font-bold text-[#f0f0f5] tracking-tight">Create your account</h1>
-            <p className="text-[#8b8fa8] text-sm mt-1">Start discovering great books today</p>
+            <h1 className="text-2xl font-bold text-[#f0f0f5] tracking-tight">Create Your Account</h1>
+            <p className="text-[#8b8fa8] text-sm mt-1">Start discovering great books today.</p>
           </div>
 
           {/* Error banner */}
@@ -65,7 +65,7 @@ export default function RegisterPage() {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-[#8b8fa8] mb-1.5">
-                Full name
+                Full Name
               </label>
               <input
                 id="name"
@@ -81,7 +81,7 @@ export default function RegisterPage() {
 
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-[#8b8fa8] mb-1.5">
-                Email address
+                Email Address
               </label>
               <input
                 id="email"
@@ -142,7 +142,7 @@ export default function RegisterPage() {
         <p className="text-center text-[#8b8fa8] text-sm mt-6">
           Already have an account?{' '}
           <Link href="/login" className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
-            Sign in
+            Sign In
           </Link>
         </p>
       </div>

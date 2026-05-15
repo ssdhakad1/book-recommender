@@ -98,7 +98,7 @@ export default function RecommendationsPage() {
             <Sparkles className="w-6 h-6" style={{ color: '#818cf8' }} />
             <h1 className="text-2xl font-bold tracking-tight" style={{ color: '#f0f0f5' }}>Book Recommendations</h1>
           </div>
-          <p className="text-sm ml-9" style={{ color: '#8b8fa8' }}>Get personalised AI-powered book suggestions</p>
+          <p className="text-sm ml-9" style={{ color: '#8b8fa8' }}>Get personalised AI-powered book suggestions.</p>
         </div>
 
         {/* Tab bar */}
@@ -245,7 +245,7 @@ export default function RecommendationsPage() {
         {!loading && results.length > 0 && (
           <div>
             <h2 className="text-lg font-bold tracking-tight mb-5" style={{ color: '#f0f0f5' }}>
-              {results.length} Recommendations For You
+              {results.length} Recommendations for You
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {results.map((book, idx) => (
@@ -268,10 +268,10 @@ export default function RecommendationsPage() {
             </div>
             <p className="text-base font-medium" style={{ color: '#8b8fa8' }}>
               {activeTab === 'history'
-                ? 'Click the button above to get personalised picks'
-                : 'Fill in the form above and click Get Recommendations'}
+                ? 'Click the button above to get personalised picks.'
+                : 'Fill in the form above and click Get Recommendations.'}
             </p>
-            <p className="text-sm mt-1.5" style={{ color: '#4a4d62' }}>Your personalised book picks will appear here</p>
+            <p className="text-sm mt-1.5" style={{ color: '#4a4d62' }}>Your personalised book picks will appear here.</p>
           </div>
         )}
       </div>

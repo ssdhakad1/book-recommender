@@ -254,7 +254,7 @@ export default function BookDetailPage() {
             {/* Description */}
             {book.description && (
               <div className="mb-6">
-                <h2 className="text-sm font-semibold uppercase tracking-wider mb-3" style={{color:'#4a4d62'}}>About this book</h2>
+                <h2 className="text-sm font-semibold uppercase tracking-wider mb-3" style={{color:'#4a4d62'}}>About This Book</h2>
                 <p className="leading-relaxed text-sm" style={{color:'#8b8fa8'}}>{book.description}</p>
               </div>
             )}

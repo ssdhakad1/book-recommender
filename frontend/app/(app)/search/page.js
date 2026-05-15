@@ -88,7 +88,7 @@ export default function SearchPage() {
             <Search className="w-6 h-6" style={{color:'#818cf8'}} />
             <h1 className="text-2xl font-bold tracking-tight" style={{color:'#f0f0f5'}}>Search Books</h1>
           </div>
-          <p className="text-sm ml-9" style={{color:'#8b8fa8'}}>Find any book and add it to your library</p>
+          <p className="text-sm ml-9" style={{color:'#8b8fa8'}}>Find any book and add it to your library.</p>
         </div>
 
         {/* Search form */}
@@ -157,7 +157,7 @@ export default function SearchPage() {
           <div className="text-center py-20">
             <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-30" style={{color:'#4a4d62'}} />
             <p className="text-lg" style={{color:'#8b8fa8'}}>No results found for &quot;{query}&quot;</p>
-            <p className="text-sm mt-1" style={{color:'#4a4d62'}}>Try a different search term</p>
+            <p className="text-sm mt-1" style={{color:'#4a4d62'}}>Try a different search term.</p>
           </div>
         )}
 
@@ -167,8 +167,8 @@ export default function SearchPage() {
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{backgroundColor:'rgba(99,102,241,0.1)'}}>
               <Search className="w-8 h-8" style={{color:'rgba(99,102,241,0.5)'}} />
             </div>
-            <p className="text-base" style={{color:'#8b8fa8'}}>Search for books by title, author, or ISBN</p>
-            <p className="text-sm mt-1" style={{color:'#4a4d62'}}>Your results will appear here</p>
+            <p className="text-base" style={{color:'#8b8fa8'}}>Search for books by title, author, or ISBN.</p>
+            <p className="text-sm mt-1" style={{color:'#4a4d62'}}>Your results will appear here.</p>
           </div>
         )}
       </div>

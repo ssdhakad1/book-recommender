@@ -193,7 +193,7 @@ export default function HomePage() {
 
             <p className="text-center text-xs mt-4" style={{ color: '#4a4d62' }}>
               <Link href="/register" className="text-indigo-400 hover:text-indigo-300">Create a free account</Link>
-              {' '}to track these, write reviews, and get personalised recommendations
+              {' '}to track these, write reviews, and get personalised recommendations.
             </p>
           </div>
         )}

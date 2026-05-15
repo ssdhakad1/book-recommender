@@ -44,8 +44,8 @@ export default function LoginPage() {
               </div>
               <span className="text-xl font-bold text-[#f0f0f5] tracking-tight">BookRecommender</span>
             </Link>
-            <h1 className="text-2xl font-bold text-[#f0f0f5] tracking-tight">Welcome back</h1>
-            <p className="text-[#8b8fa8] text-sm mt-1">Sign in to your account to continue</p>
+            <h1 className="text-2xl font-bold text-[#f0f0f5] tracking-tight">Welcome Back!</h1>
+            <p className="text-[#8b8fa8] text-sm mt-1">Sign in to your account to continue.</p>
           </div>
 
           {/* Error banner */}
@@ -59,7 +59,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-[#8b8fa8] mb-1.5">
-                Email address
+                Email Address
               </label>
               <input
                 id="email"

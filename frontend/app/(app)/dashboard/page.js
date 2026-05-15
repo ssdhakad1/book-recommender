@@ -578,7 +578,7 @@ export default function DashboardPage() {
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(99,102,241,0.12)' }}>
                   <Sparkles className="w-4 h-4 text-indigo-400" />
                 </div>
-                <h2 className="text-base font-bold tracking-tight" style={{ color: '#f0f0f5' }}>Recommended For You</h2>
+                <h2 className="text-base font-bold tracking-tight" style={{ color: '#f0f0f5' }}>Recommended for You</h2>
               </div>
 
               {forYou.loading ? (

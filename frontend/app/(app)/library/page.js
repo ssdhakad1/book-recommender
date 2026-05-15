@@ -395,7 +395,7 @@ export default function LibraryPage() {
                               </button>
                             )
                           ) : (
-                            <span className="text-xs" style={{color:'#4a4d62'}}>Mark as finished to review</span>
+                            <span className="text-xs" style={{color:'#4a4d62'}}>Finish this book to write a review</span>
                           )}
                         </td>
 
@@ -405,7 +405,7 @@ export default function LibraryPage() {
                             onClick={() => handleRemove(entry.id)}
                             className="p-1 rounded transition-colors hover:text-red-400"
                             style={{color:'#4a4d62'}}
-                            title="Remove from library"
+                            title="Remove from Library"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
