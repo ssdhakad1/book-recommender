@@ -72,7 +72,7 @@ export default function ReviewModal({ isOpen, onClose, onSave, existingReview })
         {/* Star rating */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-[#8b8fa8] mb-3">Your Rating</label>
-          <div className="flex gap-2">
+          <div className="flex gap-1.5">
             {[1, 2, 3, 4, 5].map((star) => (
               <button
                 key={star}
@@ -80,11 +80,11 @@ export default function ReviewModal({ isOpen, onClose, onSave, existingReview })
                 onClick={() => setRating(star)}
                 onMouseEnter={() => setHoverRating(star)}
                 onMouseLeave={() => setHoverRating(0)}
-                className="star p-0.5 transition-transform flex-shrink-0"
+                className="transition-transform flex-shrink-0"
               >
                 <Star
-                  size={40}
-                  style={{ width: 40, height: 40 }}
+                  size={28}
+                  style={{ width: 28, height: 28 }}
                   className={`transition-all ${
                     star <= activeRating
                       ? 'text-amber-400 fill-amber-400'
