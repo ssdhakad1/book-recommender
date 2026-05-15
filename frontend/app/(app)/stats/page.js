@@ -79,7 +79,7 @@ function StatCard({ icon: Icon, iconColor, iconBg, value, label, sub, delta }) {
   return (
     <div className="rounded-2xl border p-5 flex items-center gap-4" style={{backgroundColor:'#1a1d27', borderColor:'#2a2d3e'}}>
       <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{backgroundColor: iconBg}}>
-        <Icon className="w-5 h-5" style={{color: iconColor}} />
+        <Icon size={20} style={{color: iconColor}} />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">

@@ -10,7 +10,9 @@ export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -23,6 +25,10 @@ export default function RegisterPage() {
 
     if (password.length < 6) {
       setError('Password must be at least 6 characters.');
+      return;
+    }
+    if (password !== confirm) {
+      setError('Passwords do not match.');
       return;
     }
 
@@ -118,14 +124,46 @@ export default function RegisterPage() {
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4a4d62] hover:text-[#8b8fa8] transition-colors p-0.5"
                   tabIndex={-1}
                 >
-                  {showPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
 
+            <div>
+              <label htmlFor="confirm" className="block text-sm font-medium text-[#8b8fa8] mb-1.5">
+                Confirm Password
+              </label>
+              <div className="relative">
+                <input
+                  id="confirm"
+                  type={showConfirm ? 'text' : 'password'}
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                  placeholder="••••••••"
+                  className="w-full bg-[#0f1117] border border-[#2a2d3e] focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl px-4 py-3 pr-12 text-[#f0f0f5] placeholder-[#4a4d62] outline-none transition-all text-sm"
+                  style={{
+                    borderColor: confirm && password && confirm !== password ? '#ef4444' : undefined,
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm(!showConfirm)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4a4d62] hover:text-[#8b8fa8] transition-colors p-0.5"
+                  tabIndex={-1}
+                >
+                  {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {confirm && password && confirm !== password && (
+                <p className="text-xs mt-1.5" style={{color:'#f87171'}}>Passwords do not match</p>
+              )}
+            </div>
+
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || (!!confirm && password !== confirm)}
               className="w-full bg-indigo-500 hover:bg-indigo-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-2 mt-2"
             >
               {loading ? (
