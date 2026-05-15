@@ -80,10 +80,12 @@ export default function ReviewModal({ isOpen, onClose, onSave, existingReview })
                 onClick={() => setRating(star)}
                 onMouseEnter={() => setHoverRating(star)}
                 onMouseLeave={() => setHoverRating(0)}
-                className="star p-0.5 transition-transform"
+                className="star p-0.5 transition-transform flex-shrink-0"
               >
                 <Star
-                  className={`w-10 h-10 transition-all ${
+                  size={40}
+                  style={{ width: 40, height: 40 }}
+                  className={`transition-all ${
                     star <= activeRating
                       ? 'text-amber-400 fill-amber-400'
                       : 'text-[#2a2d3e] hover:text-amber-400/50'
