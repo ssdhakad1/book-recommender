@@ -61,6 +61,9 @@ export const auth = {
 
   resetPassword: (token, password) =>
     api.post('/api/auth/reset-password', { token, password }).then((r) => r.data),
+
+  changePassword: (currentPassword, newPassword) =>
+    api.patch('/api/auth/change-password', { currentPassword, newPassword }).then((r) => r.data),
 };
 
 // Books API
@@ -112,6 +115,18 @@ export const recommendations = {
 export const trending = {
   getTrending: () =>
     api.get('/api/trending').then((r) => r.data),
+};
+
+// Community API
+export const community = {
+  getReviews: () =>
+    api.get('/api/community/reviews').then((r) => r.data),
+
+  getProfiles: () =>
+    api.get('/api/community/profiles').then((r) => r.data),
+
+  getUserProfile: (userId) =>
+    api.get(`/api/community/users/${userId}`).then((r) => r.data),
 };
 
 export default api;

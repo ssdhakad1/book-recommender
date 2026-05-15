@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   Library, Trash2, BookOpen, Loader2, Star, Eye, Pencil,
   ArrowUp, ArrowDown, ArrowUpDown, Search, StickyNote, X,
-  Sparkles, TrendingUp, Trophy,
+  Sparkles, TrendingUp, Trophy, Download, Upload, XCircle,
 } from 'lucide-react';
 import { library as libraryApi } from '../../../lib/api';
 import { useToast } from '../../../context/ToastContext';
@@ -18,6 +18,7 @@ const STATUS_LABELS = {
   WISHLIST: 'Wishlist',
   READING: 'Currently Reading',
   FINISHED: 'Finished Reading',
+  DNF: 'Did Not Finish',
 };
 
 const FILTERS = [
@@ -25,9 +26,94 @@ const FILTERS = [
   { id: 'WISHLIST', label: 'Wishlist' },
   { id: 'READING',  label: 'Reading'  },
   { id: 'FINISHED', label: 'Finished' },
+  { id: 'DNF',      label: 'DNF'      },
 ];
 
-const STATUS_ORDER = { WISHLIST: 0, READING: 1, FINISHED: 2 };
+const STATUS_ORDER = { WISHLIST: 0, READING: 1, FINISHED: 2, DNF: 3 };
+
+// ── CSV Export ────────────────────────────────────────────────────────────────
+
+function exportLibraryCSV(entries, reviews) {
+  const escape = (s) => `"${String(s || '').replace(/"/g, '""')}"`;
+  const header = ['Title', 'Author', 'Status', 'Rating', 'Review', 'Date Added', 'Date Finished', 'Pages', 'Genres'].join(',');
+  const rows = entries.map((e) => {
+    const r = reviews[e.id];
+    return [
+      escape(e.book?.title),
+      escape(e.book?.author),
+      e.status,
+      r?.rating || '',
+      escape(r?.content),
+      e.addedAt    ? new Date(e.addedAt).toLocaleDateString('en-US')    : '',
+      e.finishedAt ? new Date(e.finishedAt).toLocaleDateString('en-US') : '',
+      e.book?.pageCount || '',
+      escape((e.book?.genres || []).join(', ')),
+    ].join(',');
+  });
+  const csv = [header, ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `my-library-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Goodreads CSV parser ──────────────────────────────────────────────────────
+
+function parseGoodreadsCSV(text) {
+  const lines = text.split(/\r?\n/).filter(Boolean);
+  if (lines.length < 2) return [];
+  // Parse CSV respecting quoted fields
+  const parseRow = (line) => {
+    const fields = [];
+    let cur = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') {
+        if (inQuotes && line[i + 1] === '"') { cur += '"'; i++; }
+        else inQuotes = !inQuotes;
+      } else if (c === ',' && !inQuotes) {
+        fields.push(cur); cur = '';
+      } else {
+        cur += c;
+      }
+    }
+    fields.push(cur);
+    return fields;
+  };
+  const headers = parseRow(lines[0]).map((h) => h.trim().toLowerCase());
+  const idx = (name) => headers.findIndex((h) => h.includes(name));
+  const iTitle     = idx('title');
+  const iAuthor    = idx('author');
+  const iIsbn      = headers.findIndex((h) => h === 'isbn13' || h === 'isbn');
+  const iRating    = idx('my rating');
+  const iPages     = idx('number of pages');
+  const iShelf     = idx('exclusive shelf');
+  const iReview    = idx('my review');
+  const iDateRead  = idx('date read');
+
+  const shelfMap = { read: 'FINISHED', 'currently-reading': 'READING', 'to-read': 'WISHLIST' };
+
+  return lines.slice(1).map((line) => {
+    const f = parseRow(line);
+    const shelf  = f[iShelf]?.trim()  || 'to-read';
+    const status = shelfMap[shelf] || 'WISHLIST';
+    const rating = parseInt(f[iRating], 10) || 0;
+    return {
+      title:     f[iTitle]?.trim()   || '',
+      author:    f[iAuthor]?.trim()  || '',
+      isbn:      f[iIsbn]?.trim().replace(/[="]/g, '') || null,
+      pageCount: parseInt(f[iPages], 10) || null,
+      status,
+      rating:    rating > 0 && rating <= 5 ? rating : null,
+      review:    f[iReview]?.trim() || null,
+      finishedAt: status === 'FINISHED' && f[iDateRead]?.trim() ? f[iDateRead].trim() : null,
+    };
+  }).filter((b) => b.title);
+}
 
 // ── Small helpers ─────────────────────────────────────────────────────────────
 
@@ -283,9 +369,166 @@ function FirstFinishModal({ isOpen, onClose, onWriteReview }) {
   );
 }
 
+// ── Goodreads Import Modal ────────────────────────────────────────────────────
+
+function GoodreadsImportModal({ isOpen, onClose, onImport }) {
+  const [file, setFile] = useState(null);
+  const [books, setBooks] = useState([]);
+  const [step, setStep] = useState('upload'); // upload | preview | importing | done
+  const [progress, setProgress] = useState({ done: 0, total: 0, failed: 0 });
+  const fileRef = useRef(null);
+
+  useEffect(() => {
+    if (!isOpen) { setFile(null); setBooks([]); setStep('upload'); setProgress({ done: 0, total: 0, failed: 0 }); }
+  }, [isOpen]);
+
+  const handleFile = (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setFile(f);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const parsed = parseGoodreadsCSV(ev.target.result);
+      setBooks(parsed);
+      setStep('preview');
+    };
+    reader.readAsText(f, 'UTF-8');
+  };
+
+  const handleImport = async () => {
+    setStep('importing');
+    let done = 0; let failed = 0;
+    setProgress({ done: 0, total: books.length, failed: 0 });
+    for (const b of books) {
+      try {
+        const entry = await libraryApi.addToLibrary({
+          title: b.title, author: b.author, isbn: b.isbn,
+          pageCount: b.pageCount, status: b.status,
+        }).catch(async (err) => {
+          if (err.message?.includes('already')) return null;
+          throw err;
+        });
+        // Save review if rating > 0 and entry was created
+        if (entry?.entry?.id && b.rating) {
+          await libraryApi.saveReview(entry.entry.id, b.review || `Imported from Goodreads (${b.rating}★)`, b.rating).catch(() => {});
+        }
+        done++;
+      } catch { failed++; }
+      setProgress({ done: done + failed, total: books.length, failed });
+    }
+    setProgress({ done, total: books.length, failed });
+    setStep('done');
+    onImport();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{backgroundColor:'rgba(0,0,0,0.75)', backdropFilter:'blur(4px)'}}>
+      <div className="rounded-2xl border w-full max-w-lg" style={{backgroundColor:'#1a1d27', borderColor:'#2a2d3e'}}>
+        <div className="flex items-center justify-between px-5 py-4 border-b" style={{borderColor:'#2a2d3e'}}>
+          <div className="flex items-center gap-2">
+            <Upload className="w-4 h-4" style={{color:'#818cf8'}} />
+            <h3 className="text-sm font-semibold" style={{color:'#f0f0f5'}}>Import from Goodreads</h3>
+          </div>
+          <button onClick={onClose} className="p-1 rounded-lg transition-colors hover:bg-[#2a2d3e]" style={{color:'#4a4d62'}}>
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="p-5">
+          {step === 'upload' && (
+            <div>
+              <p className="text-sm leading-relaxed mb-4" style={{color:'#8b8fa8'}}>
+                Export your library from Goodreads: <span style={{color:'#f0f0f5'}}>My Books → Import/Export → Export Library</span>. Then upload the CSV file here.
+              </p>
+              <button
+                onClick={() => fileRef.current?.click()}
+                className="w-full border-2 border-dashed rounded-2xl py-10 flex flex-col items-center gap-3 transition-all hover:border-indigo-500/50"
+                style={{borderColor:'#2a2d3e'}}
+              >
+                <Upload className="w-8 h-8" style={{color:'#4a4d62'}} />
+                <span className="text-sm font-medium" style={{color:'#8b8fa8'}}>Click to select your Goodreads CSV</span>
+              </button>
+              <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleFile} />
+            </div>
+          )}
+
+          {step === 'preview' && (
+            <div>
+              <p className="text-sm mb-4" style={{color:'#8b8fa8'}}>
+                Found <span style={{color:'#f0f0f5'}}>{books.length} books</span> in your Goodreads export.
+              </p>
+              <div className="rounded-xl border overflow-hidden mb-4" style={{borderColor:'#2a2d3e'}}>
+                <div className="max-h-52 overflow-y-auto">
+                  {books.slice(0, 10).map((b, i) => (
+                    <div key={i} className="flex items-center justify-between px-4 py-2.5 border-b last:border-0" style={{borderColor:'#2a2d3e'}}>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate" style={{color:'#f0f0f5'}}>{b.title}</p>
+                        <p className="text-xs truncate" style={{color:'#6b7280'}}>{b.author}</p>
+                      </div>
+                      <span className="text-xs ml-3 flex-shrink-0 px-2 py-0.5 rounded-full" style={{
+                        backgroundColor: b.status === 'FINISHED' ? 'rgba(74,222,128,0.1)' : b.status === 'READING' ? 'rgba(99,102,241,0.1)' : 'rgba(245,158,11,0.1)',
+                        color: b.status === 'FINISHED' ? '#4ade80' : b.status === 'READING' ? '#818cf8' : '#f59e0b',
+                      }}>{STATUS_LABELS[b.status]}</span>
+                    </div>
+                  ))}
+                  {books.length > 10 && (
+                    <div className="px-4 py-2.5 text-center text-xs" style={{color:'#4a4d62'}}>
+                      + {books.length - 10} more books
+                    </div>
+                  )}
+                </div>
+              </div>
+              <p className="text-xs mb-4" style={{color:'#4a4d62'}}>Books already in your library will be skipped. Ratings will be imported where available.</p>
+              <div className="flex gap-3">
+                <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all hover:bg-[#0f1117]" style={{borderColor:'#2a2d3e', color:'#8b8fa8', backgroundColor:'transparent'}}>
+                  Cancel
+                </button>
+                <button onClick={handleImport} className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white transition-all hover:opacity-90" style={{backgroundColor:'#6366f1'}}>
+                  Import {books.length} Books
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === 'importing' && (
+            <div className="text-center py-6">
+              <div className="w-10 h-10 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-sm font-medium mb-1" style={{color:'#f0f0f5'}}>Importing your library…</p>
+              <p className="text-xs" style={{color:'#8b8fa8'}}>{progress.done} of {progress.total} books processed</p>
+              <div className="mt-4 h-1.5 rounded-full overflow-hidden" style={{backgroundColor:'#2a2d3e'}}>
+                <div className="h-full rounded-full transition-all duration-300" style={{width:`${progress.total ? (progress.done / progress.total) * 100 : 0}%`, backgroundColor:'#6366f1'}} />
+              </div>
+            </div>
+          )}
+
+          {step === 'done' && (
+            <div className="text-center py-4">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{backgroundColor:'rgba(74,222,128,0.1)'}}>
+                <Library className="w-7 h-7" style={{color:'#4ade80'}} />
+              </div>
+              <p className="text-base font-bold mb-1" style={{color:'#f0f0f5'}}>Import complete!</p>
+              <p className="text-sm mb-1" style={{color:'#8b8fa8'}}>
+                <span style={{color:'#4ade80'}}>{progress.done}</span> books added to your library.
+              </p>
+              {progress.failed > 0 && (
+                <p className="text-xs mb-4" style={{color:'#f59e0b'}}>{progress.failed} books couldn&apos;t be imported.</p>
+              )}
+              <button onClick={onClose} className="mt-4 px-6 py-2.5 rounded-xl text-sm font-medium text-white transition-all hover:opacity-90" style={{backgroundColor:'#6366f1'}}>
+                Done
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Empty state onboarding ────────────────────────────────────────────────────
 
-function LibraryOnboarding() {
+function LibraryOnboarding({ onImport }) {
   return (
     <div className="py-16 text-center max-w-lg mx-auto">
       <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5" style={{backgroundColor:'rgba(99,102,241,0.1)'}}>
@@ -295,6 +538,14 @@ function LibraryOnboarding() {
       <p className="text-sm leading-relaxed mb-8" style={{color:'#8b8fa8'}}>
         Start building your reading list. Track what you&apos;ve read, what you&apos;re reading, and what&apos;s up next — all in one place.
       </p>
+      <button
+        onClick={onImport}
+        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium border transition-all hover:bg-[#1a1d27] mb-8"
+        style={{borderColor:'#2a2d3e', color:'#818cf8', backgroundColor:'transparent'}}
+      >
+        <Upload className="w-4 h-4" />
+        Already on Goodreads? Import your library
+      </button>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         {[
@@ -365,6 +616,7 @@ export default function LibraryPage() {
   const [notesModal, setNotesModal]         = useState({ open: false, entryId: null });
   const [removeModal, setRemoveModal]       = useState({ open: false, entryId: null, loading: false });
   const [firstFinishModal, setFirstFinishModal] = useState({ open: false, entryId: null });
+  const [importModal, setImportModal]       = useState(false);
 
   const fetchLibrary = useCallback(async () => {
     setLoading(true);
@@ -515,6 +767,7 @@ export default function LibraryPage() {
     WISHLIST: entries.filter((e) => e.status === 'WISHLIST').length,
     READING:  entries.filter((e) => e.status === 'READING').length,
     FINISHED: entries.filter((e) => e.status === 'FINISHED').length,
+    DNF:      entries.filter((e) => e.status === 'DNF').length,
   };
 
   const viewingEntry  = entries.find((e) => e.id === viewModal.entryId);
@@ -539,12 +792,36 @@ export default function LibraryPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-1">
-            <Library className="w-6 h-6" style={{color:'#4ade80'}} />
-            <h1 className="text-2xl font-bold tracking-tight" style={{color:'#f0f0f5'}}>My Library</h1>
+        <div className="flex items-start justify-between gap-4 mb-8 flex-wrap">
+          <div>
+            <div className="flex items-center gap-3 mb-1">
+              <Library className="w-6 h-6" style={{color:'#4ade80'}} />
+              <h1 className="text-2xl font-bold tracking-tight" style={{color:'#f0f0f5'}}>My Library</h1>
+            </div>
+            <p className="text-sm ml-9" style={{color:'#8b8fa8'}}>{entries.length} book{entries.length !== 1 ? 's' : ''} in your collection</p>
           </div>
-          <p className="text-sm ml-9" style={{color:'#8b8fa8'}}>{entries.length} book{entries.length !== 1 ? 's' : ''} in your collection</p>
+          {entries.length > 0 && (
+            <div className="flex gap-2">
+              <button
+                onClick={() => setImportModal(true)}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border transition-all hover:bg-[#1a1d27]"
+                style={{borderColor:'#2a2d3e', color:'#8b8fa8', backgroundColor:'transparent'}}
+                title="Import from Goodreads"
+              >
+                <Upload className="w-4 h-4" />
+                Import
+              </button>
+              <button
+                onClick={() => exportLibraryCSV(entries, reviews)}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border transition-all hover:bg-[#1a1d27]"
+                style={{borderColor:'#2a2d3e', color:'#8b8fa8', backgroundColor:'transparent'}}
+                title="Export library as CSV"
+              >
+                <Download className="w-4 h-4" />
+                Export
+              </button>
+            </div>
+          )}
         </div>
 
         <PageHint
@@ -555,7 +832,7 @@ export default function LibraryPage() {
         />
 
         {/* Stat cards */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-4 gap-4 mb-8">
           <div className="rounded-2xl border p-4" style={{backgroundColor:'#1a1d27', borderColor:'#2a2d3e'}}>
             <p className="text-xs font-medium mb-1" style={{color:'#4a4d62'}}>WISHLIST</p>
             <p className="text-2xl font-bold" style={{color:'#f0f0f5'}}>{counts.WISHLIST}</p>
@@ -567,6 +844,10 @@ export default function LibraryPage() {
           <div className="rounded-2xl border p-4" style={{backgroundColor:'#1a1d27', borderColor:'#2a2d3e'}}>
             <p className="text-xs font-medium mb-1" style={{color:'#4a4d62'}}>FINISHED</p>
             <p className="text-2xl font-bold text-green-400">{counts.FINISHED}</p>
+          </div>
+          <div className="rounded-2xl border p-4" style={{backgroundColor:'#1a1d27', borderColor:'#2a2d3e'}}>
+            <p className="text-xs font-medium mb-1" style={{color:'#4a4d62'}}>DNF</p>
+            <p className="text-2xl font-bold" style={{color:'#6b7280'}}>{counts.DNF}</p>
           </div>
         </div>
 
@@ -584,7 +865,7 @@ export default function LibraryPage() {
             </button>
           </div>
         ) : entries.length === 0 ? (
-          <LibraryOnboarding />
+          <LibraryOnboarding onImport={() => setImportModal(true)} />
         ) : (
           <>
             {/* Search + filter row */}
@@ -735,6 +1016,7 @@ export default function LibraryPage() {
                                   <option value="WISHLIST">Wishlist</option>
                                   <option value="READING">Currently Reading</option>
                                   <option value="FINISHED">Finished Reading</option>
+                                  <option value="DNF">Did Not Finish</option>
                                 </select>
                                 {updatingEntryId === entry.id && (
                                   <Loader2 className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
@@ -777,6 +1059,11 @@ export default function LibraryPage() {
                                     <Star className="w-4 h-4" /> Write Review
                                   </button>
                                 )
+                              ) : entry.status === 'DNF' ? (
+                                <div className="flex items-center gap-1.5">
+                                  <XCircle className="w-3.5 h-3.5 flex-shrink-0" style={{color:'#6b7280'}} />
+                                  <span className="text-xs" style={{color:'#6b7280'}}>Did not finish</span>
+                                </div>
                               ) : (
                                 <span className="text-xs" style={{color:'#4a4d62'}}>Finish this book to write a review</span>
                               )}
@@ -861,6 +1148,13 @@ export default function LibraryPage() {
           setFirstFinishModal({ open: false, entryId: null });
           setEditModal({ open: true, entryId: firstFinishModal.entryId });
         }}
+      />
+
+      {/* Goodreads Import Modal */}
+      <GoodreadsImportModal
+        isOpen={importModal}
+        onClose={() => setImportModal(false)}
+        onImport={() => { setImportModal(false); fetchLibrary(); }}
       />
     </div>
   );

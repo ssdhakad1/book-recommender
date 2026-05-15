@@ -123,7 +123,7 @@ router.post('/', async (req, res) => {
       return res.status(409).json({ error: 'Book is already in your library.', entry: existing });
     }
 
-    const validStatus = ['WISHLIST', 'READING', 'FINISHED'];
+    const validStatus = ['WISHLIST', 'READING', 'FINISHED', 'DNF'];
     const entryStatus = validStatus.includes(status) ? status : 'WISHLIST';
 
     const entry = await prisma.libraryEntry.create({
@@ -154,9 +154,9 @@ router.patch('/:entryId', async (req, res) => {
   }
 
   if (status !== undefined) {
-    const validStatus = ['WISHLIST', 'READING', 'FINISHED'];
+    const validStatus = ['WISHLIST', 'READING', 'FINISHED', 'DNF'];
     if (!validStatus.includes(status)) {
-      return res.status(400).json({ error: 'Invalid status. Must be WISHLIST, READING, or FINISHED.' });
+      return res.status(400).json({ error: 'Invalid status. Must be WISHLIST, READING, FINISHED, or DNF.' });
     }
   }
 
@@ -177,6 +177,8 @@ router.patch('/:entryId', async (req, res) => {
       updateData.status = status;
       if (status === 'READING' && !entry.startedAt) updateData.startedAt = new Date();
       if (status === 'FINISHED' && !entry.finishedAt) updateData.finishedAt = new Date();
+      // DNF clears finishedAt (book not actually finished)
+      if (status === 'DNF') updateData.finishedAt = null;
     }
 
     if (currentPage !== undefined) {

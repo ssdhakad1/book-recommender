@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   Sparkles, BookOpen, CheckCircle, Bookmark, BookMarked,
-  Target, ChevronRight, Library, TrendingUp, Search, Quote, Lightbulb,
+  Target, ChevronRight, Library, TrendingUp, Search, Quote, Lightbulb, Flame,
 } from 'lucide-react';
 import { QUOTES, WORDS, DID_YOU_KNOW, TRIVIA } from './dailyContent';
 import { recommendations as recApi, library as libraryApi } from '../../../lib/api';
@@ -290,6 +290,78 @@ function BookTriviaSection({ initial }) {
             Next question →
           </button>
         </div>
+      )}
+    </div>
+  );
+}
+
+// ── Reading Streak widget ─────────────────────────────────────────────────────
+
+function calcStreak(entries) {
+  const finished = entries.filter((e) => e.status === 'FINISHED' && e.finishedAt);
+  if (!finished.length) return { booksThisMonth: 0, monthStreak: 0, booksThisYear: 0 };
+
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+
+  const thisMonthStart = new Date(currentYear, currentMonth, 1);
+  const booksThisMonth = finished.filter((e) => new Date(e.finishedAt) >= thisMonthStart).length;
+  const booksThisYear  = finished.filter((e) => new Date(e.finishedAt).getFullYear() === currentYear).length;
+
+  // Consecutive months with at least 1 book finished
+  const monthsWithBooks = new Set(
+    finished.map((e) => {
+      const d = new Date(e.finishedAt);
+      return `${d.getFullYear()}-${d.getMonth()}`;
+    })
+  );
+  let monthStreak = 0;
+  let y = currentYear;
+  let m = currentMonth;
+  while (monthsWithBooks.has(`${y}-${m}`)) {
+    monthStreak++;
+    m--;
+    if (m < 0) { m = 11; y--; }
+    if (monthStreak > 36) break;
+  }
+  return { booksThisMonth, monthStreak, booksThisYear };
+}
+
+function ReadingStreakWidget({ entries }) {
+  const { booksThisMonth, monthStreak, booksThisYear } = calcStreak(entries);
+
+  if (booksThisYear === 0) return null;
+
+  return (
+    <div className="rounded-2xl border p-5" style={{ backgroundColor: '#1a1d27', borderColor: '#2a2d3e' }}>
+      <div className="flex items-center gap-2.5 mb-4">
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(251,191,36,0.12)' }}>
+          <Flame className="w-4 h-4 text-amber-400" />
+        </div>
+        <span className="font-semibold text-sm" style={{ color: '#f0f0f5' }}>Reading Streak</span>
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        <div className="text-center">
+          <p className="text-2xl font-bold" style={{ color: '#fbbf24' }}>{booksThisMonth}</p>
+          <p className="text-xs mt-0.5" style={{ color: '#8b8fa8' }}>this month</p>
+        </div>
+        <div className="text-center border-x" style={{ borderColor: '#2a2d3e' }}>
+          <p className="text-2xl font-bold" style={{ color: monthStreak >= 3 ? '#f97316' : '#f0f0f5' }}>
+            {monthStreak}
+            {monthStreak >= 1 && <span className="text-base ml-0.5">🔥</span>}
+          </p>
+          <p className="text-xs mt-0.5" style={{ color: '#8b8fa8' }}>mo. streak</p>
+        </div>
+        <div className="text-center">
+          <p className="text-2xl font-bold" style={{ color: '#4ade80' }}>{booksThisYear}</p>
+          <p className="text-xs mt-0.5" style={{ color: '#8b8fa8' }}>this year</p>
+        </div>
+      </div>
+      {monthStreak >= 3 && (
+        <p className="text-xs text-center mt-3" style={{ color: '#f59e0b' }}>
+          {monthStreak} months in a row — keep it up! 🎉
+        </p>
       )}
     </div>
   );
@@ -650,6 +722,7 @@ export default function DashboardPage() {
           <div className="lg:border-l lg:pl-6" style={{ borderColor: '#2a2d3e' }}>
             <div className="space-y-8">
               <GettingStartedChecklist entries={entries} />
+              <ReadingStreakWidget entries={entries} />
               <ReadingGoalWidget finishedCount={stats.finished} />
               <UpNextCard entries={entries} loading={libraryLoading} />
               <RecentlyViewedCard />

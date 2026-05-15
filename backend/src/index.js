@@ -8,6 +8,7 @@ const booksRoutes = require('./routes/books');
 const libraryRoutes = require('./routes/library');
 const recommendationsRoutes = require('./routes/recommendations');
 const trendingRoutes = require('./routes/trending');
+const communityRoutes = require('./routes/community');
 
 const app = express();
 
@@ -62,6 +63,7 @@ app.use('/api/books', booksRoutes);
 app.use('/api/library', libraryRoutes);
 app.use('/api/recommendations', recommendationsRoutes);
 app.use('/api/trending', trendingRoutes);
+app.use('/api/community', communityRoutes);
 
 // 404 handler
 app.use((req, res) => {

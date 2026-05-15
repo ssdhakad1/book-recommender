@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   BookOpen, LogOut, LayoutDashboard, Library, TrendingUp,
-  Search, Sparkles, BarChart2, Menu, X, User, Trash2, AlertTriangle,
+  Search, Sparkles, BarChart2, Menu, X, User, Trash2, AlertTriangle, Users,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -14,6 +14,7 @@ const NAV_LINKS = [
   { href: '/library',         label: 'Library',   icon: Library         },
   { href: '/stats',           label: 'Stats',     icon: BarChart2       },
   { href: '/trending',        label: 'Trending',  icon: TrendingUp      },
+  { href: '/community',       label: 'Community', icon: Users           },
   { href: '/search',          label: 'Search',    icon: Search          },
 ];
 

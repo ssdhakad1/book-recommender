@@ -75,14 +75,24 @@ function totalPages(entries) {
 
 // ── Sub-components ───────────────────────────────────────────────────────────
 
-function StatCard({ icon: Icon, iconColor, iconBg, value, label, sub }) {
+function StatCard({ icon: Icon, iconColor, iconBg, value, label, sub, delta }) {
   return (
     <div className="rounded-2xl border p-5 flex items-center gap-4" style={{backgroundColor:'#1a1d27', borderColor:'#2a2d3e'}}>
       <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{backgroundColor: iconBg}}>
         <Icon className="w-5 h-5" style={{color: iconColor}} />
       </div>
-      <div>
-        <p className="text-2xl font-bold leading-tight" style={{color:'#f0f0f5'}}>{value}</p>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <p className="text-2xl font-bold leading-tight" style={{color:'#f0f0f5'}}>{value}</p>
+          {delta !== undefined && delta !== null && (
+            <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0" style={{
+              backgroundColor: delta > 0 ? 'rgba(74,222,128,0.12)' : delta < 0 ? 'rgba(239,68,68,0.12)' : 'rgba(107,114,128,0.12)',
+              color:           delta > 0 ? '#4ade80'               : delta < 0 ? '#f87171'               : '#6b7280',
+            }}>
+              {delta > 0 ? `+${delta}` : delta < 0 ? `${delta}` : '='} vs last yr
+            </span>
+          )}
+        </div>
         <p className="text-xs font-medium" style={{color:'#8b8fa8'}}>{label}</p>
         {sub && <p className="text-xs mt-0.5" style={{color:'#4a4d62'}}>{sub}</p>}
       </div>
@@ -355,6 +365,16 @@ export default function StatsPage() {
     return new Date(e.finishedAt).getFullYear() === year;
   }).length;
 
+  const finishedPrevYear = finished.filter((e) => {
+    if (!e.finishedAt) return false;
+    return new Date(e.finishedAt).getFullYear() === year - 1;
+  }).length;
+
+  // Only show delta if we have data for at least one of the years
+  const yearDelta = (finishedThisYear > 0 || finishedPrevYear > 0)
+    ? finishedThisYear - finishedPrevYear
+    : null;
+
   return (
     <div className="min-h-screen pb-16" style={{backgroundColor:'#0f1117'}}>
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -474,6 +494,7 @@ export default function StatsPage() {
                 iconBg="rgba(56,189,248,0.1)"
                 value={finishedThisYear}
                 label={`Finished in ${year}`}
+                delta={yearDelta}
               />
             </div>
 

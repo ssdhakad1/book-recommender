@@ -45,6 +45,7 @@ enum LibraryStatus {
   WISHLIST
   READING
   FINISHED
+  DNF
 }
 
 model LibraryEntry {
