@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -79,35 +79,38 @@ export default function BookDetailPage() {
   const [addingToLibrary, setAddingToLibrary] = useState(false);
   const [showSources, setShowSources] = useState(false);
 
-  useEffect(() => {
-    async function fetchBook() {
-      try {
-        let bookData;
-        if (googleBooksId && googleBooksId.startsWith('OL_')) {
-          bookData = await fetchOpenLibraryBook(googleBooksId);
-        } else {
-          const data = await booksApi.getBook(googleBooksId);
-          bookData = data.book;
-        }
-        setBook(bookData);
-
-        // Check if already in library
-        try {
-          const libData = await libraryApi.getLibrary();
-          const entries = libData.entries || [];
-          const found = entries.some((e) => e.book?.googleBooksId === bookData.googleBooksId);
-          setIsInLibrary(found);
-        } catch {
-          // Non-critical
-        }
-      } catch (err) {
-        setError(err.message || 'Failed to load book details.');
-      } finally {
-        setLoading(false);
+  const fetchBook = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      let bookData;
+      if (googleBooksId && googleBooksId.startsWith('OL_')) {
+        bookData = await fetchOpenLibraryBook(googleBooksId);
+      } else {
+        const data = await booksApi.getBook(googleBooksId);
+        bookData = data.book;
       }
+      setBook(bookData);
+
+      // Check if already in library
+      try {
+        const libData = await libraryApi.getLibrary();
+        const entries = libData.entries || [];
+        const found = entries.some((e) => e.book?.googleBooksId === bookData.googleBooksId);
+        setIsInLibrary(found);
+      } catch {
+        // Non-critical
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to load book details.');
+    } finally {
+      setLoading(false);
     }
-    if (googleBooksId) fetchBook();
   }, [googleBooksId]);
+
+  useEffect(() => {
+    if (googleBooksId) fetchBook();
+  }, [googleBooksId, fetchBook]);
 
   const handleAddToLibrary = async () => {
     if (!book || isInLibrary) return;
@@ -134,12 +137,33 @@ export default function BookDetailPage() {
 
   if (error || !book) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{backgroundColor:'#0f1117'}}>
-        <div className="text-center">
-          <p className="text-red-400 mb-4">{error || 'Book not found.'}</p>
-          <Link href="/search" className="text-indigo-400 hover:text-indigo-300 transition-colors">
-            Back to Search
-          </Link>
+      <div className="min-h-screen flex items-center justify-center px-4" style={{backgroundColor:'#0f1117'}}>
+        <div className="rounded-2xl border px-8 py-10 text-center max-w-sm w-full" style={{backgroundColor:'rgba(239,68,68,0.05)', borderColor:'rgba(239,68,68,0.2)'}}>
+          <BookOpen className="w-8 h-8 mx-auto mb-3 opacity-40" style={{color:'#ef4444'}} />
+          <p className="text-sm font-medium mb-1" style={{color:'#f0f0f5'}}>
+            {error ? 'Couldn\'t load book details' : 'Book not found'}
+          </p>
+          <p className="text-xs mb-5" style={{color:'#8b8fa8'}}>
+            {error || 'This book could not be found.'}
+          </p>
+          <div className="flex gap-3 justify-center flex-wrap">
+            {error && (
+              <button
+                onClick={fetchBook}
+                className="px-5 py-2 rounded-xl text-sm font-medium text-white transition-all hover:opacity-90"
+                style={{backgroundColor:'#6366f1'}}
+              >
+                Try Again
+              </button>
+            )}
+            <Link
+              href="/search"
+              className="px-5 py-2 rounded-xl text-sm font-medium border transition-all hover:bg-[#1a1d27]"
+              style={{borderColor:'#2a2d3e', color:'#8b8fa8'}}
+            >
+              Back to Search
+            </Link>
+          </div>
         </div>
       </div>
     );

@@ -218,12 +218,21 @@ export default function LibraryPage() {
           </div>
         </div>
 
-        {error && (
-          <div className="border text-red-400 px-4 py-3 rounded-xl mb-6 text-sm" style={{backgroundColor:'rgba(239,68,68,0.1)', borderColor:'rgba(239,68,68,0.3)'}}>
-            {error}
+        {error ? (
+          <div className="rounded-2xl border px-6 py-10 text-center" style={{backgroundColor:'rgba(239,68,68,0.05)', borderColor:'rgba(239,68,68,0.2)'}}>
+            <Library className="w-8 h-8 mx-auto mb-3 opacity-40" style={{color:'#ef4444'}} />
+            <p className="text-sm font-medium mb-1" style={{color:'#f0f0f5'}}>Couldn&apos;t load your library</p>
+            <p className="text-xs mb-5" style={{color:'#8b8fa8'}}>This usually resolves itself — give it another try.</p>
+            <button
+              onClick={fetchLibrary}
+              className="px-5 py-2 rounded-xl text-sm font-medium text-white transition-all hover:opacity-90"
+              style={{backgroundColor:'#6366f1'}}
+            >
+              Try Again
+            </button>
           </div>
-        )}
-
+        ) : (
+        <>
         {/* Filter tabs */}
         <div className="flex gap-1.5 p-1.5 rounded-2xl mb-6 w-fit border flex-wrap" style={{backgroundColor:'#1a1d27', borderColor:'#2a2d3e'}}>
           {FILTERS.map((f) => (
@@ -417,6 +426,8 @@ export default function LibraryPage() {
               </table>
             </div>
           </div>
+        )}
+        </>
         )}
       </div>
 

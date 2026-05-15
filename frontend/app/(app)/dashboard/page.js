@@ -479,12 +479,12 @@ export default function DashboardPage() {
   }, []);
 
   const handleMoodChip = async (chip) => {
-    setMoodResult({ books: [], loading: true, activeChip: chip.label });
+    setMoodResult({ books: [], loading: true, activeChip: chip.label, error: false });
     try {
       const data = await recApi.getRecommendations('mood', chip.query, 10);
-      setMoodResult({ books: data.recommendations || [], loading: false, activeChip: chip.label });
+      setMoodResult({ books: data.recommendations || [], loading: false, activeChip: chip.label, error: false });
     } catch {
-      setMoodResult({ books: [], loading: false, activeChip: chip.label });
+      setMoodResult({ books: [], loading: false, activeChip: chip.label, error: true });
     }
   };
 
@@ -626,7 +626,24 @@ export default function DashboardPage() {
                   {Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)}
                 </div>
               )}
-              {!moodResult.loading && moodResult.books.length > 0 && (
+              {!moodResult.loading && moodResult.error && (
+                <div className="rounded-2xl border px-6 py-8 text-center" style={{ backgroundColor: 'rgba(239,68,68,0.05)', borderColor: 'rgba(239,68,68,0.2)' }}>
+                  <Sparkles className="w-6 h-6 mx-auto mb-2 opacity-40" style={{ color: '#ef4444' }} />
+                  <p className="text-sm font-medium mb-1" style={{ color: '#f0f0f5' }}>Couldn&apos;t load mood picks</p>
+                  <p className="text-xs mb-4" style={{ color: '#8b8fa8' }}>Give it another try.</p>
+                  <button
+                    onClick={() => {
+                      const chip = sessionMoods.find(c => c.label === moodResult.activeChip);
+                      if (chip) handleMoodChip(chip);
+                    }}
+                    className="px-4 py-1.5 rounded-xl text-xs font-medium text-white transition-all hover:opacity-90"
+                    style={{ backgroundColor: '#6366f1' }}
+                  >
+                    Try Again
+                  </button>
+                </div>
+              )}
+              {!moodResult.loading && !moodResult.error && moodResult.books.length > 0 && (
                 <HorizontalBookScroll books={moodResult.books} onAddToLibrary={handleAddToLibrary} libraryBookIds={libraryBookIds} />
               )}
             </section>
