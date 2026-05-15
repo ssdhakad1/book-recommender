@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   Library, Trash2, BookOpen, Loader2, Star, Eye, Pencil,
   ArrowUp, ArrowDown, ArrowUpDown, Search, StickyNote, X,
-  Sparkles, TrendingUp, PartyPopper,
+  Sparkles, TrendingUp, Trophy,
 } from 'lucide-react';
 import { library as libraryApi } from '../../../lib/api';
 import { useToast } from '../../../context/ToastContext';
@@ -255,7 +255,7 @@ function FirstFinishModal({ isOpen, onClose, onWriteReview }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{backgroundColor:'rgba(0,0,0,0.75)', backdropFilter:'blur(4px)'}}>
       <div className="rounded-2xl border p-8 max-w-sm w-full text-center" style={{backgroundColor:'#1a1d27', borderColor:'#2a2d3e'}}>
         <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5" style={{backgroundColor:'rgba(74,222,128,0.1)'}}>
-          <PartyPopper className="w-8 h-8" style={{color:'#4ade80'}} />
+          <Trophy className="w-8 h-8" style={{color:'#4ade80'}} />
         </div>
         <h2 className="text-xl font-bold mb-2" style={{color:'#f0f0f5'}}>First book finished! 🎉</h2>
         <p className="text-sm leading-relaxed mb-6" style={{color:'#8b8fa8'}}>
@@ -264,10 +264,10 @@ function FirstFinishModal({ isOpen, onClose, onWriteReview }) {
         <div className="space-y-2">
           <button
             onClick={onWriteReview}
-            className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
+            className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 flex items-center justify-center gap-2"
             style={{backgroundColor:'#6366f1'}}
           >
-            <Star className="w-4 h-4 inline mr-1.5 -mt-0.5" />
+            <Star className="w-4 h-4" />
             Write a Review
           </button>
           <button
