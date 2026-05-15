@@ -69,17 +69,12 @@ export default function Navbar() {
           {/* Desktop user area */}
           {user && (
             <div className="hidden md:flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{backgroundColor:'rgba(99,102,241,0.2)', border:'1px solid rgba(99,102,241,0.35)'}}>
-                  <span className="text-sm font-bold" style={{color:'#818cf8'}}>{user.name?.[0]?.toUpperCase() || 'U'}</span>
-                </div>
-                <span
-                  className="text-sm font-medium max-w-[160px] truncate cursor-default"
-                  style={{color:'#f0f0f5'}}
-                  title={user.name}
-                >
-                  {user.name}
-                </span>
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 cursor-default"
+                style={{backgroundColor:'rgba(99,102,241,0.2)', border:'1px solid rgba(99,102,241,0.35)'}}
+                title={user.name}
+              >
+                <span className="text-sm font-bold" style={{color:'#818cf8'}}>{user.name?.[0]?.toUpperCase() || 'U'}</span>
               </div>
               <button
                 onClick={logout}
