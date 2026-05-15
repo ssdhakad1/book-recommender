@@ -62,7 +62,7 @@ function mapWorkToBook(work, reason) {
     author,
     coverUrl: coverId ? `https://covers.openlibrary.org/b/id/${coverId}-M.jpg` : null,
     description: work.description ? (typeof work.description === 'string' ? work.description : work.description.value || '').substring(0, 300) : null,
-    genres: work.subject ? work.subject.slice(0, 4) : (work.subjects ? work.subjects.slice(0, 4).map(s => s.name || s) : []),
+    genres: (work.subject || work.subjects?.map(s => s.name || s) || []).filter(s => !s.includes(':') && !s.includes('=') && s.length <= 40).slice(0, 4),
     publishedDate: work.first_publish_year ? String(work.first_publish_year) : null,
     averageRating: work.ratings_average ? Math.round(work.ratings_average * 10) / 10 : null,
     pageCount: work.number_of_pages_median || null,

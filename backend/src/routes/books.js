@@ -35,7 +35,7 @@ function mapOpenLibraryDoc(doc) {
     author,
     coverUrl: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` : null,
     description: null,
-    genres: doc.subject ? doc.subject.slice(0, 4) : [],
+    genres: (doc.subject || []).filter(s => !s.includes(':') && !s.includes('=') && s.length <= 40).slice(0, 4),
     publishedDate: doc.first_publish_year ? String(doc.first_publish_year) : null,
     averageRating: doc.ratings_average || null,
     pageCount: doc.number_of_pages_median || null,
@@ -73,7 +73,7 @@ async function mapOpenLibraryWork(workId) {
     description = typeof work.description === 'string' ? work.description : work.description.value || null;
   }
 
-  const genres = work.subjects ? work.subjects.slice(0, 5) : [];
+  const genres = (work.subjects || []).filter(s => !s.includes(':') && !s.includes('=') && s.length <= 40).slice(0, 5);
   const title = work.title || 'Unknown Title';
   const buyLink = `https://www.google.com/search?q=${encodeURIComponent(title + ' ' + author + ' buy')}`;
 
