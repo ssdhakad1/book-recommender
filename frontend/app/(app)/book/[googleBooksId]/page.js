@@ -159,7 +159,10 @@ export default function BookDetailPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{backgroundColor:'#0f1117'}}>
-        <div className="w-10 h-10 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+        <div className="text-center">
+          <div className="w-10 h-10 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mx-auto mb-6" />
+          <p style={{color:'#8b8fa8'}}>Loading the book…</p>
+        </div>
       </div>
     );
   }
