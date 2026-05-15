@@ -4,8 +4,16 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   User, Mail, Calendar, BookOpen, CheckCircle, Bookmark,
-  Star, KeyRound, ChevronDown, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle,
+  Star, KeyRound, ChevronDown, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle, SlidersHorizontal,
 } from 'lucide-react';
+
+const GENRES = [
+  'Fantasy', 'Science Fiction', 'Mystery', 'Thriller', 'Romance',
+  'Historical Fiction', 'Literary Fiction', 'Horror', 'Biography',
+  'Self-Help', 'Business', 'Psychology', 'Philosophy', 'Poetry',
+  'Young Adult', 'Classic Literature', 'Adventure', 'Non-Fiction',
+  'Graphic Novel', 'True Crime',
+];
 import { useAuth } from '../../../context/AuthContext';
 import { library as libraryApi, auth as authApi } from '../../../lib/api';
 
@@ -13,6 +21,26 @@ export default function ProfilePage() {
   const { user } = useAuth();
   const [stats, setStats]             = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
+
+  // Genre preferences state
+  const [selectedGenres, setSelectedGenres] = useState([]);
+  const [genreSaved, setGenreSaved]         = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('br_genre_prefs') || '[]');
+      if (Array.isArray(saved)) setSelectedGenres(saved);
+    } catch {}
+  }, []);
+
+  const toggleGenre = (g) =>
+    setSelectedGenres((prev) => prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]);
+
+  const handleSaveGenres = () => {
+    try { localStorage.setItem('br_genre_prefs', JSON.stringify(selectedGenres)); } catch {}
+    setGenreSaved(true);
+    setTimeout(() => setGenreSaved(false), 2500);
+  };
 
   // Change password state
   const [pwOpen,    setPwOpen]    = useState(false);
@@ -146,6 +174,59 @@ export default function ProfilePage() {
               View full reading stats →
             </Link>
           </div>
+        </div>
+
+        {/* Genre Preferences */}
+        <div className="rounded-2xl border p-6 mb-6" style={{backgroundColor:'#1a1d27', borderColor:'#2a2d3e'}}>
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal className="w-4 h-4" style={{color:'#818cf8'}} />
+              <h3 className="text-xs font-semibold uppercase tracking-wider" style={{color:'#4a4d62'}}>Genre Preferences</h3>
+            </div>
+            {selectedGenres.length > 0 && (
+              <span className="text-xs px-2 py-0.5 rounded-full" style={{backgroundColor:'rgba(99,102,241,0.15)', color:'#818cf8'}}>
+                {selectedGenres.length} selected
+              </span>
+            )}
+          </div>
+          <p className="text-xs mb-4" style={{color:'#6b7280'}}>
+            Used to show &ldquo;Matches your taste&rdquo; badges on recommendations.
+          </p>
+
+          <div className="flex flex-wrap gap-2 mb-4">
+            {GENRES.map((g) => {
+              const sel = selectedGenres.includes(g);
+              return (
+                <button
+                  key={g}
+                  onClick={() => toggleGenre(g)}
+                  className="px-3 py-1.5 rounded-full text-xs font-medium transition-all border"
+                  style={{
+                    backgroundColor: sel ? 'rgba(99,102,241,0.18)' : 'transparent',
+                    borderColor:     sel ? '#6366f1' : '#2a2d3e',
+                    color:           sel ? '#818cf8' : '#8b8fa8',
+                  }}
+                >
+                  {sel && '✓ '}{g}
+                </button>
+              );
+            })}
+          </div>
+
+          {genreSaved && (
+            <div className="flex items-center gap-2 text-xs px-3 py-2.5 rounded-xl mb-3" style={{backgroundColor:'rgba(74,222,128,0.08)', color:'#4ade80'}}>
+              <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+              Preferences saved!
+            </div>
+          )}
+
+          <button
+            onClick={handleSaveGenres}
+            className="w-full py-2.5 rounded-xl text-sm font-medium text-white transition-all hover:opacity-90"
+            style={{backgroundColor:'#6366f1'}}
+          >
+            Save Preferences
+          </button>
         </div>
 
         {/* Account actions */}
