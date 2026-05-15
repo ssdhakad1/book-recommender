@@ -474,7 +474,7 @@ export default function LibraryPage() {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{backgroundColor:'#0f1117'}}>
         <div className="text-center">
-          <div className="w-10 h-10 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mx-auto mb-3" />
+          <div className="w-10 h-10 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mx-auto mb-6" />
           <p style={{color:'#8b8fa8'}}>Loading your library…</p>
         </div>
       </div>
@@ -531,13 +531,13 @@ export default function LibraryPage() {
             <div className="flex flex-col sm:flex-row gap-3 mb-6">
               {/* Search input */}
               <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{color:'#4a4d62'}} />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4" style={{color:'#4a4d62'}} />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search title, author, genre…"
-                  className="w-full border rounded-xl pl-10 pr-10 py-2 text-sm outline-none transition-all focus:border-indigo-500"
+                  className="w-full border rounded-xl pl-11 pr-10 py-3 text-sm outline-none transition-all focus:border-indigo-500"
                   style={{backgroundColor:'#1a1d27', borderColor:'#2a2d3e', color:'#f0f0f5'}}
                 />
                 {searchQuery && (
@@ -669,12 +669,12 @@ export default function LibraryPage() {
                                   value={entry.status}
                                   disabled={updatingEntryId === entry.id}
                                   onChange={(e) => handleStatusChange(entry.id, e.target.value)}
-                                  className="border text-sm rounded-lg px-3 py-1.5 outline-none focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                  style={{backgroundColor:'#0f1117', borderColor:'#2a2d3e', color:'#f0f0f5'}}
+                                  className="border text-sm rounded-lg px-3 py-1.5 outline-none focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-44"
+                                  style={{backgroundColor:'#0f1117', borderColor:'#2a2d3e', color:'#f0f0f5', textAlignLast:'center'}}
                                 >
-                                  <option value="WISHLIST">&#9679; Wishlist</option>
-                                  <option value="READING">&#9679; Currently Reading</option>
-                                  <option value="FINISHED">&#9679; Finished Reading</option>
+                                  <option value="WISHLIST">Wishlist</option>
+                                  <option value="READING">Currently Reading</option>
+                                  <option value="FINISHED">Finished Reading</option>
                                 </select>
                                 {updatingEntryId === entry.id && (
                                   <Loader2 className="w-3.5 h-3.5 text-indigo-400 animate-spin" />
