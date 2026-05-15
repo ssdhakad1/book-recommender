@@ -29,6 +29,7 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await register(email, password, name);
+      try { localStorage.setItem('br_show_wizard', '1'); } catch {}
       router.replace('/dashboard');
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');

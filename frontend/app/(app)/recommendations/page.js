@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Sparkles, User, Tag, Heart, BookOpen, Loader2 } from 'lucide-react';
 import { recommendations as recApi, library as libraryApi } from '../../../lib/api';
 import BookCard from '../../../components/BookCard';
+import PageHint from '../../../components/PageHint';
 
 const TABS = [
   { id: 'author', label: 'By Author', icon: User },
@@ -40,6 +41,7 @@ export default function RecommendationsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [libraryBookIds, setLibraryBookIds] = useState(new Set());
+  const [savedGenres, setSavedGenres] = useState([]);
 
   useEffect(() => {
     async function loadLibrary() {
@@ -52,6 +54,12 @@ export default function RecommendationsPage() {
       } catch { /* non-critical */ }
     }
     loadLibrary();
+
+    // Load saved genre preferences from onboarding wizard
+    try {
+      const prefs = JSON.parse(localStorage.getItem('br_genre_prefs') || '[]');
+      if (Array.isArray(prefs) && prefs.length > 0) setSavedGenres(prefs);
+    } catch {}
   }, []);
 
   const handleGetRecommendations = async () => {
@@ -65,6 +73,7 @@ export default function RecommendationsPage() {
         activeTab === 'mood' ? moodInput : '';
       const data = await recApi.getRecommendations(activeTab, input, 10);
       setResults(data.recommendations || []);
+      try { localStorage.setItem('br_got_recommendation', '1'); } catch {};
     } catch (err) {
       setError(err.message || 'Failed to get recommendations. Please try again.');
     } finally {
@@ -100,6 +109,11 @@ export default function RecommendationsPage() {
           </div>
           <p className="text-sm ml-9" style={{ color: '#8b8fa8' }}>Get personalised AI-powered book suggestions.</p>
         </div>
+
+        <PageHint
+          pageKey="recommendations"
+          message="Try Reading History for picks based on books you've already finished — the more you've read, the better the suggestions."
+        />
 
         {/* Tab bar */}
         <div className="flex gap-1.5 p-1.5 rounded-2xl mb-8 w-fit border flex-wrap" style={{ backgroundColor: '#1a1d27', borderColor: '#2a2d3e' }}>
@@ -151,6 +165,30 @@ export default function RecommendationsPage() {
           {activeTab === 'genre' && (
             <div>
               <label className="block text-sm font-medium mb-2" style={{ color: '#8b8fa8' }}>Select a genre</label>
+
+              {/* Saved genre preference chips */}
+              {savedGenres.length > 0 && (
+                <div className="mb-3">
+                  <p className="text-xs mb-2" style={{ color: '#4a4d62' }}>Your preferences</p>
+                  <div className="flex flex-wrap gap-2">
+                    {savedGenres.map(g => (
+                      <button
+                        key={g}
+                        onClick={() => setGenreInput(g)}
+                        className="px-3 py-1.5 rounded-full text-xs font-medium transition-all border"
+                        style={{
+                          backgroundColor: genreInput === g ? 'rgba(99,102,241,0.18)' : 'transparent',
+                          borderColor:     genreInput === g ? '#6366f1' : '#2a2d3e',
+                          color:           genreInput === g ? '#818cf8' : '#8b8fa8',
+                        }}
+                      >
+                        {g}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="flex gap-3">
                 <select
                   value={genreInput}

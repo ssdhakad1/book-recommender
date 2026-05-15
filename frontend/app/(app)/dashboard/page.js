@@ -11,6 +11,8 @@ import { QUOTES, WORDS, DID_YOU_KNOW, TRIVIA } from './dailyContent';
 import { recommendations as recApi, library as libraryApi } from '../../../lib/api';
 import { getRecentlyViewed } from '../../../lib/recentlyViewed';
 import HorizontalBookScroll from '../../../components/HorizontalBookScroll';
+import GettingStartedChecklist from '../../../components/GettingStartedChecklist';
+import OnboardingWizard from '../../../components/OnboardingWizard';
 import { useAuth } from '../../../context/AuthContext';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -437,6 +439,7 @@ function QuickActionsCard() {
 export default function DashboardPage() {
   const { user } = useAuth();
 
+  const [showWizard, setShowWizard] = useState(false);
   const [entries, setEntries] = useState([]);
   const [libraryLoading, setLibraryLoading] = useState(true);
   const [libraryBookIds, setLibraryBookIds] = useState(new Set());
@@ -447,6 +450,12 @@ export default function DashboardPage() {
   const [sessionWord]   = useState(() => pickOne(WORDS,       WORD_KEY));
   const [sessionDyk]    = useState(() => pickOne(DID_YOU_KNOW, DYK_KEY));
   const [sessionTrivia] = useState(() => pickOne(TRIVIA,      TRIVIA_KEY));
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('br_show_wizard') === '1') setShowWizard(true);
+    } catch {}
+  }, []);
 
   useEffect(() => {
     async function init() {
@@ -500,6 +509,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#0f1117' }}>
+      {showWizard && <OnboardingWizard onComplete={() => setShowWizard(false)} />}
       <div className="flex-1 flex flex-col max-w-6xl mx-auto w-full px-4 py-8 pb-16">
 
         {/* Greeting + Stats + top cards */}
@@ -639,6 +649,7 @@ export default function DashboardPage() {
           {/* Right: sidebar */}
           <div className="lg:border-l lg:pl-6" style={{ borderColor: '#2a2d3e' }}>
             <div className="space-y-8">
+              <GettingStartedChecklist entries={entries} />
               <ReadingGoalWidget finishedCount={stats.finished} />
               <UpNextCard entries={entries} loading={libraryLoading} />
               <RecentlyViewedCard />

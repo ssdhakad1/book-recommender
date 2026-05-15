@@ -6,12 +6,13 @@ import Link from 'next/link';
 import {
   Library, Trash2, BookOpen, Loader2, Star, Eye, Pencil,
   ArrowUp, ArrowDown, ArrowUpDown, Search, StickyNote, X,
-  Sparkles, TrendingUp,
+  Sparkles, TrendingUp, PartyPopper,
 } from 'lucide-react';
 import { library as libraryApi } from '../../../lib/api';
 import { useToast } from '../../../context/ToastContext';
 import ReviewModal from '../../../components/ReviewModal';
 import ReviewViewModal from '../../../components/ReviewViewModal';
+import PageHint from '../../../components/PageHint';
 
 const STATUS_LABELS = {
   WISHLIST: 'Wishlist',
@@ -246,6 +247,42 @@ function ProgressCell({ entry, onUpdate }) {
   );
 }
 
+// ── First Finish modal ────────────────────────────────────────────────────────
+
+function FirstFinishModal({ isOpen, onClose, onWriteReview }) {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{backgroundColor:'rgba(0,0,0,0.75)', backdropFilter:'blur(4px)'}}>
+      <div className="rounded-2xl border p-8 max-w-sm w-full text-center" style={{backgroundColor:'#1a1d27', borderColor:'#2a2d3e'}}>
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5" style={{backgroundColor:'rgba(74,222,128,0.1)'}}>
+          <PartyPopper className="w-8 h-8" style={{color:'#4ade80'}} />
+        </div>
+        <h2 className="text-xl font-bold mb-2" style={{color:'#f0f0f5'}}>First book finished! 🎉</h2>
+        <p className="text-sm leading-relaxed mb-6" style={{color:'#8b8fa8'}}>
+          Amazing work! Why not jot down your thoughts while the story is fresh?
+        </p>
+        <div className="space-y-2">
+          <button
+            onClick={onWriteReview}
+            className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
+            style={{backgroundColor:'#6366f1'}}
+          >
+            <Star className="w-4 h-4 inline mr-1.5 -mt-0.5" />
+            Write a Review
+          </button>
+          <button
+            onClick={onClose}
+            className="w-full py-2.5 rounded-xl text-sm transition-all hover:bg-[#2a2d3e]"
+            style={{color:'#8b8fa8', backgroundColor:'transparent'}}
+          >
+            Maybe Later
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Empty state onboarding ────────────────────────────────────────────────────
 
 function LibraryOnboarding() {
@@ -323,10 +360,11 @@ export default function LibraryPage() {
   const [sortConfig, setSortConfig] = useState({ key: null, dir: 'asc' });
 
   // Modals
-  const [editModal, setEditModal]     = useState({ open: false, entryId: null });
-  const [viewModal, setViewModal]     = useState({ open: false, entryId: null });
-  const [notesModal, setNotesModal]   = useState({ open: false, entryId: null });
-  const [removeModal, setRemoveModal] = useState({ open: false, entryId: null, loading: false });
+  const [editModal, setEditModal]           = useState({ open: false, entryId: null });
+  const [viewModal, setViewModal]           = useState({ open: false, entryId: null });
+  const [notesModal, setNotesModal]         = useState({ open: false, entryId: null });
+  const [removeModal, setRemoveModal]       = useState({ open: false, entryId: null, loading: false });
+  const [firstFinishModal, setFirstFinishModal] = useState({ open: false, entryId: null });
 
   const fetchLibrary = useCallback(async () => {
     setLoading(true);
@@ -358,14 +396,28 @@ export default function LibraryPage() {
   const handleStatusChange = async (entryId, newStatus) => {
     setUpdatingEntryId(entryId);
     try {
+      const wasFirstFinish =
+        newStatus === 'FINISHED' &&
+        entries.filter(e => e.status === 'FINISHED').length === 0;
+
       const data = await libraryApi.updateLibraryEntry(entryId, newStatus);
       setEntries((prev) => prev.map((e) => (e.id === entryId ? { ...e, ...data.entry } : e)));
+
       if (newStatus === 'FINISHED') {
         try {
           const r = await libraryApi.getReview(entryId);
           if (r.review) setReviews((prev) => ({ ...prev, [entryId]: r.review }));
         } catch {}
+
+        // Milestone: first book ever finished
+        let alreadySeen = false;
+        try { alreadySeen = localStorage.getItem('br_first_finish_seen') === '1'; } catch {}
+        if (wasFirstFinish && !alreadySeen) {
+          try { localStorage.setItem('br_first_finish_seen', '1'); } catch {}
+          setFirstFinishModal({ open: true, entryId });
+        }
       }
+
       if (newStatus !== 'FINISHED') {
         setReviews((prev) => { const next = { ...prev }; delete next[entryId]; return next; });
       }
@@ -421,6 +473,7 @@ export default function LibraryPage() {
     setReviews((prev) => ({ ...prev, [editModal.entryId]: newReview }));
     setEditModal({ open: false, entryId: null });
     showToast('Review saved!', 'success');
+    try { localStorage.setItem('br_first_review_done', '1'); } catch {}
   };
 
   const handleSort = (key) => {
@@ -493,6 +546,13 @@ export default function LibraryPage() {
           </div>
           <p className="text-sm ml-9" style={{color:'#8b8fa8'}}>{entries.length} book{entries.length !== 1 ? 's' : ''} in your collection</p>
         </div>
+
+        <PageHint
+          pageKey="library"
+          message="Mark books as Finished to unlock reviews and personalised recommendations. Use the Status dropdown on any row."
+          linkText="Discover books →"
+          linkHref="/recommendations"
+        />
 
         {/* Stat cards */}
         <div className="grid grid-cols-3 gap-4 mb-8">
@@ -791,6 +851,16 @@ export default function LibraryPage() {
         onConfirm={handleRemoveConfirm}
         loading={removeModal.loading}
         bookTitle={removeEntry?.book?.title || ''}
+      />
+
+      {/* First Finish Celebration Modal */}
+      <FirstFinishModal
+        isOpen={firstFinishModal.open}
+        onClose={() => setFirstFinishModal({ open: false, entryId: null })}
+        onWriteReview={() => {
+          setFirstFinishModal({ open: false, entryId: null });
+          setEditModal({ open: true, entryId: firstFinishModal.entryId });
+        }}
       />
     </div>
   );

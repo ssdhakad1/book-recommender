@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Search, BookOpen } from 'lucide-react';
 import { books as booksApi, library as libraryApi } from '../../../lib/api';
 import BookCard from '../../../components/BookCard';
+import PageHint from '../../../components/PageHint';
 
 function SkeletonCard() {
   return (
@@ -120,6 +121,11 @@ export default function SearchPage() {
           </div>
           <p className="text-sm ml-9" style={{color:'#8b8fa8'}}>Find any book and add it to your library.</p>
         </div>
+
+        <PageHint
+          pageKey="search"
+          message="Results appear automatically as you type. Click any book to see details, or hit Add to Library to save it."
+        />
 
         {/* Search form */}
         <form onSubmit={handleSearch} className="mb-8">
