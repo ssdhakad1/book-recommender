@@ -6,6 +6,7 @@ import Image from 'next/image';
 import {
   Sparkles, BookOpen, CheckCircle, Bookmark, BookMarked,
   Target, ChevronRight, Library, TrendingUp, Search, Quote, Lightbulb,
+  Trash2, AlertTriangle,
 } from 'lucide-react';
 import { QUOTES, WORDS, DID_YOU_KNOW, TRIVIA } from './dailyContent';
 import { recommendations as recApi, library as libraryApi } from '../../../lib/api';
@@ -385,16 +386,59 @@ function QuickActionsCard() {
   );
 }
 
+// ── Delete Account Modal ───────────────────────────────────────────────────────
+
+function DeleteAccountModal({ onClose, onConfirm, loading }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}>
+      <div className="rounded-2xl border p-6 max-w-sm w-full" style={{ backgroundColor: '#1a1d27', borderColor: '#2a2d3e' }}>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(239,68,68,0.12)' }}>
+            <AlertTriangle className="w-5 h-5" style={{ color: '#ef4444' }} />
+          </div>
+          <div>
+            <h3 className="font-bold text-sm" style={{ color: '#f0f0f5' }}>Delete Account</h3>
+            <p className="text-xs" style={{ color: '#8b8fa8' }}>This cannot be undone</p>
+          </div>
+        </div>
+        <p className="text-sm leading-relaxed mb-6" style={{ color: '#8b8fa8' }}>
+          Your account, entire library, and all reviews will be permanently deleted. This action cannot be reversed.
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all hover:bg-[#0f1117] disabled:opacity-50"
+            style={{ borderColor: '#2a2d3e', color: '#8b8fa8', backgroundColor: 'transparent' }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white transition-all hover:opacity-90 disabled:opacity-60"
+            style={{ backgroundColor: '#ef4444' }}
+          >
+            {loading ? 'Deleting…' : 'Delete Account'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main page ──────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, deleteAccount } = useAuth();
 
   const [entries, setEntries] = useState([]);
   const [libraryLoading, setLibraryLoading] = useState(true);
   const [libraryBookIds, setLibraryBookIds] = useState(new Set());
   const [forYou, setForYou] = useState({ books: [], loading: true, empty: false });
   const [moodResult, setMoodResult] = useState({ books: [], loading: false, activeChip: null });
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [sessionMoods]  = useState(() => pickSessionMoods());
   const [sessionQuote]  = useState(() => pickOne(QUOTES,      QUOTE_KEY));
   const [sessionWord]   = useState(() => pickOne(WORDS,       WORD_KEY));
@@ -444,6 +488,16 @@ export default function DashboardPage() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    setDeleteLoading(true);
+    try {
+      await deleteAccount();
+    } catch {
+      setDeleteLoading(false);
+      setShowDeleteModal(false);
+    }
+  };
+
   const stats = {
     finished: entries.filter(e => e.status === 'FINISHED').length,
     reading: entries.filter(e => e.status === 'READING').length,
@@ -453,6 +507,13 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#0f1117' }}>
+      {showDeleteModal && (
+        <DeleteAccountModal
+          onClose={() => setShowDeleteModal(false)}
+          onConfirm={handleDeleteAccount}
+          loading={deleteLoading}
+        />
+      )}
       <div className="flex-1 flex flex-col max-w-6xl mx-auto w-full px-4 py-8 pb-16">
 
         {/* Greeting + Stats + top cards */}
@@ -580,6 +641,19 @@ export default function DashboardPage() {
               <BookTriviaSection initial={sessionTrivia} />
               <DidYouKnowCard fact={sessionDyk} />
               <QuickActionsCard />
+
+              {/* Account */}
+              <div className="rounded-2xl border p-4" style={{ backgroundColor: '#1a1d27', borderColor: '#2a2d3e' }}>
+                <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#4a4d62' }}>Account</p>
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium border transition-all hover:bg-red-500/5"
+                  style={{ borderColor: 'rgba(239,68,68,0.25)', color: '#ef4444', backgroundColor: 'rgba(239,68,68,0.05)' }}
+                >
+                  <Trash2 className="w-4 h-4 flex-shrink-0" />
+                  Delete Account
+                </button>
+              </div>
             </div>
           </div>
         </div>

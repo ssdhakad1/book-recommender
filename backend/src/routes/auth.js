@@ -96,6 +96,17 @@ router.post(
   }
 );
 
+// DELETE /api/auth/account — permanently delete the authenticated user and all their data
+router.delete('/account', authMiddleware, async (req, res) => {
+  try {
+    await prisma.user.delete({ where: { id: req.user.id } });
+    res.json({ message: 'Account deleted successfully.' });
+  } catch (err) {
+    console.error('Delete account error:', err);
+    res.status(500).json({ error: 'Failed to delete account. Please try again.' });
+  }
+});
+
 // GET /api/auth/me
 router.get('/me', authMiddleware, async (req, res) => {
   try {

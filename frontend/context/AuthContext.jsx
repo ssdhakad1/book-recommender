@@ -52,8 +52,15 @@ export function AuthProvider({ children }) {
     router.push('/');
   };
 
+  const deleteAccount = async () => {
+    await auth.deleteAccount();
+    removeToken();
+    setUser(null);
+    router.push('/');
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, fetchUser }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, fetchUser, deleteAccount }}>
       {children}
     </AuthContext.Provider>
   );

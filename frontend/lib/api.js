@@ -46,6 +46,9 @@ export const auth = {
 
   getMe: () =>
     api.get('/api/auth/me').then((r) => r.data),
+
+  deleteAccount: () =>
+    api.delete('/api/auth/account').then((r) => r.data),
 };
 
 // Books API
