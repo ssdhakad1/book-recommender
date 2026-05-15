@@ -37,8 +37,8 @@ export default function ForgotPasswordPage() {
           {/* Logo */}
           <div className="text-center mb-8">
             <Link href="/" className="inline-flex items-center gap-2.5 mb-6">
-              <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-md shadow-indigo-900/40">
-                <BookOpen className="w-6 h-6 text-white" />
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{backgroundColor:'#6366f1'}}>
+                <BookOpen size={16} style={{color:'white'}} />
               </div>
               <span className="text-xl font-bold tracking-tight" style={{color:'#f0f0f5'}}>BookRecommender</span>
             </Link>
