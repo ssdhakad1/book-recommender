@@ -10,30 +10,96 @@ router.use(authMiddleware);
 // Subjects too generic / noisy to be useful for finding similar authors
 const SUBJECT_NOISE = /^(short stories|american|english|fiction|large type|large print|accessible book|protected daisy|lending library|internet archive|nonfiction|open library staff picks|overdrive|in library|ebook|audiobook|juvenile|juvenile fiction|children|picture books|illustrated|hardcover|paperback|spanish language|french language|translated|american fiction|english fiction|bestseller)$/i;
 
+// ─── Genre → Open Library subject slugs ──────────────────────────────────────
+// Maps common genre names to 2-3 reliable OL subject slugs, searched in parallel.
+// This ensures "Children's" → juvenile_fiction + childrens_literature instead of
+// just "childrens" which has poor OL coverage.
+const GENRE_MAP = {
+  "children's":         ['juvenile fiction', 'childrens literature', 'children'],
+  "children":           ['juvenile fiction', 'childrens literature'],
+  "young adult":        ['young adult fiction', 'young adult literature'],
+  "ya":                 ['young adult fiction', 'young adult literature'],
+  "romance":            ['romance', 'love stories', 'romantic fiction'],
+  "thriller":           ['thriller', 'suspense', 'psychological thriller'],
+  "mystery":            ['mystery', 'detective and mystery stories', 'crime fiction'],
+  "crime":              ['crime fiction', 'mystery', 'detective stories'],
+  "horror":             ['horror', 'supernatural fiction', 'gothic fiction'],
+  "fantasy":            ['fantasy fiction', 'epic fantasy', 'magic'],
+  "epic fantasy":       ['epic fantasy', 'fantasy fiction', 'sword and sorcery'],
+  "science fiction":    ['science fiction', 'space opera', 'hard science fiction'],
+  "sci-fi":             ['science fiction', 'space opera'],
+  "scifi":              ['science fiction', 'space opera'],
+  "historical fiction": ['historical fiction', 'historical novels'],
+  "history":            ['history', 'world history'],
+  "biography":          ['biography', 'autobiography', 'memoir'],
+  "autobiography":      ['autobiography', 'biography', 'memoir'],
+  "memoir":             ['memoir', 'autobiography', 'biography'],
+  "self-help":          ['self help', 'personal development', 'motivation'],
+  "self help":          ['self help', 'personal development', 'motivation'],
+  "business":           ['business', 'entrepreneurship', 'management'],
+  "literary fiction":   ['literary fiction', 'classics'],
+  "classics":           ['classics', 'literary fiction', 'world literature'],
+  "graphic novel":      ['graphic novels', 'comics'],
+  "manga":              ['manga', 'graphic novels'],
+  "adventure":          ['adventure', 'action and adventure'],
+  "dystopia":           ['dystopian fiction', 'post apocalyptic fiction'],
+  "dystopian":          ['dystopian fiction', 'post apocalyptic fiction'],
+  "humor":              ['humor', 'comedy', 'wit and humor'],
+  "comedy":             ['humor', 'comedy', 'satire'],
+  "satire":             ['satire', 'humor'],
+  "philosophy":         ['philosophy', 'ethics', 'philosophical fiction'],
+  "poetry":             ['poetry', 'american poetry'],
+  "western":            ['western stories', 'frontier and pioneer life'],
+  "paranormal":         ['paranormal fiction', 'supernatural fiction'],
+  "urban fantasy":      ['urban fantasy', 'fantasy fiction'],
+  "cozy mystery":       ['cozy mystery', 'mystery'],
+  "spy":                ['spy stories', 'espionage'],
+  "political":          ['political fiction', 'political science'],
+  "true crime":         ['true crime', 'crime'],
+  "spirituality":       ['spirituality', 'religion', 'mindfulness'],
+  "science":            ['science', 'popular science', 'natural history'],
+  "cooking":            ['cooking', 'cookbooks'],
+  "travel":             ['travel', 'travel writing'],
+  "art":                ['art', 'art history'],
+  "sports":             ['sports', 'athletics'],
+  "psychology":         ['psychology', 'mental health', 'cognitive science'],
+  "economics":          ['economics', 'finance', 'business'],
+};
+
+// Returns 1–3 reliable OL subject strings for a given genre name
+function getGenreSubjects(genre) {
+  const normalized = genre.toLowerCase().trim().replace(/['']/g, "'");
+  if (GENRE_MAP[normalized]) return GENRE_MAP[normalized];
+  // Partial match (e.g. "romantic comedy" → matches "comedy")
+  for (const [key, subjects] of Object.entries(GENRE_MAP)) {
+    if (normalized.includes(key) || key.includes(normalized)) return subjects;
+  }
+  // Fall back: use the genre name itself as an OL subject
+  return [normalized];
+}
+
 // ─── Mood → Open Library subjects mapping ────────────────────────────────────
-// Each entry has regex patterns to match against the user's mood text,
-// and a list of Open Library subjects to search.
 const MOOD_MAP = [
-  { patterns: [/happy|joy|cheerful|uplifting|feel.good|lighthearted|optimistic/i], subjects: ['humor', 'comedy', 'feel-good fiction', 'uplifting'] },
-  { patterns: [/sad|melancholy|emotional|heartbreak|cry|grief|longing|bittersweet/i], subjects: ['drama', 'literary fiction', 'grief', 'loss'] },
-  { patterns: [/thrilling|suspense|tense|edge of my seat|gripping|page.turn/i], subjects: ['suspense', 'thriller', 'psychological thriller'] },
+  { patterns: [/happy|joy|cheerful|uplifting|feel.good|lighthearted|optimistic/i],          subjects: ['humor', 'comedy', 'feel-good fiction', 'uplifting'] },
+  { patterns: [/sad|melancholy|emotional|heartbreak|cry|grief|longing|bittersweet/i],        subjects: ['drama', 'literary fiction', 'grief', 'loss'] },
+  { patterns: [/thrilling|suspense|tense|edge of my seat|gripping|page.turn/i],              subjects: ['suspense', 'thriller', 'psychological thriller'] },
   { patterns: [/inspired|motivat|empower|self.help|improve|better myself|personal growth/i], subjects: ['self-help', 'biography', 'motivation', 'success'] },
-  { patterns: [/romantic|romance|love|relationship|dating|heartfelt|swoon/i], subjects: ['romance', 'love stories', 'romantic fiction'] },
-  { patterns: [/adventur|action|quest|journey|explore|travel|exciting/i], subjects: ['adventure', 'action and adventure', 'quest'] },
-  { patterns: [/scary|horror|dark|creepy|frightening|terror|eerie|unsettling/i], subjects: ['horror', 'supernatural fiction', 'gothic fiction'] },
-  { patterns: [/funny|laugh|humor|comic|hilarious|witty|silly|absurd|satire/i], subjects: ['humor', 'comedy', 'satire', 'wit and humor'] },
-  { patterns: [/thoughtful|philosophical|deep|meaning|existential|intellectual|literary/i], subjects: ['philosophy', 'literary fiction', 'classics'] },
-  { patterns: [/mysterious|mystery|puzzle|detective|crime|whodunit|investigation/i], subjects: ['mystery', 'detective and mystery stories', 'crime fiction'] },
-  { patterns: [/magic|fantasy|dragon|wizard|elf|epic fantasy|sword|sorcery/i], subjects: ['fantasy fiction', 'epic fantasy', 'magic', 'dragons'] },
-  { patterns: [/cozy|relaxing|comfortable|warm|gentle|calm|quiet|slow.burn/i], subjects: ['cozy mystery', 'domestic fiction', 'slice of life'] },
-  { patterns: [/sci.fi|science fiction|space|future|robot|alien|dystopia|tech/i], subjects: ['science fiction', 'space opera', 'dystopian fiction'] },
-  { patterns: [/histor|past|period|ancient|medieval|war|battle|wwii|civil war/i], subjects: ['historical fiction', 'war stories', 'history'] },
-  { patterns: [/coming.of.age|grow|teen|young adult|school|identity|adolescen/i], subjects: ['coming of age', 'young adult fiction'] },
-  { patterns: [/family|parent|sibling|home|domestic|motherhood|fatherhood/i], subjects: ['family', 'domestic fiction', 'family life'] },
-  { patterns: [/apocalyp|survival|end of world|post.apocal|dystop/i], subjects: ['dystopian fiction', 'apocalyptic fiction', 'survival'] },
-  { patterns: [/mythology|myth|gods|legend|folklore|fairy tale/i], subjects: ['mythology', 'folklore', 'fairy tales', 'gods and goddesses'] },
-  { patterns: [/spiritual|mindful|meditat|buddhis|zen|inner peace/i], subjects: ['spirituality', 'mindfulness', 'meditation', 'religion'] },
-  { patterns: [/business|entrepreneur|startup|leadership|finance|money/i], subjects: ['business', 'entrepreneurship', 'leadership', 'economics'] },
+  { patterns: [/romantic|romance|love|relationship|dating|heartfelt|swoon/i],                subjects: ['romance', 'love stories', 'romantic fiction'] },
+  { patterns: [/adventur|action|quest|journey|explore|travel|exciting/i],                    subjects: ['adventure', 'action and adventure', 'quest'] },
+  { patterns: [/scary|horror|dark|creepy|frightening|terror|eerie|unsettling/i],             subjects: ['horror', 'supernatural fiction', 'gothic fiction'] },
+  { patterns: [/funny|laugh|humor|comic|hilarious|witty|silly|absurd|satire/i],              subjects: ['humor', 'comedy', 'satire', 'wit and humor'] },
+  { patterns: [/thoughtful|philosophical|deep|meaning|existential|intellectual|literary/i],  subjects: ['philosophy', 'literary fiction', 'classics'] },
+  { patterns: [/mysterious|mystery|puzzle|detective|crime|whodunit|investigation/i],         subjects: ['mystery', 'detective and mystery stories', 'crime fiction'] },
+  { patterns: [/magic|fantasy|dragon|wizard|elf|epic fantasy|sword|sorcery/i],               subjects: ['fantasy fiction', 'epic fantasy', 'magic', 'dragons'] },
+  { patterns: [/cozy|relaxing|comfortable|warm|gentle|calm|quiet|slow.burn/i],               subjects: ['cozy mystery', 'domestic fiction', 'slice of life'] },
+  { patterns: [/sci.fi|science fiction|space|future|robot|alien|dystopia|tech/i],            subjects: ['science fiction', 'space opera', 'dystopian fiction'] },
+  { patterns: [/histor|past|period|ancient|medieval|war|battle|wwii|civil war/i],            subjects: ['historical fiction', 'war stories', 'history'] },
+  { patterns: [/coming.of.age|grow|teen|young adult|school|identity|adolescen/i],            subjects: ['coming of age', 'young adult fiction'] },
+  { patterns: [/family|parent|sibling|home|domestic|motherhood|fatherhood/i],                subjects: ['family', 'domestic fiction', 'family life'] },
+  { patterns: [/apocalyp|survival|end of world|post.apocal|dystop/i],                        subjects: ['dystopian fiction', 'apocalyptic fiction', 'survival'] },
+  { patterns: [/mythology|myth|gods|legend|folklore|fairy tale/i],                           subjects: ['mythology', 'folklore', 'fairy tales', 'gods and goddesses'] },
+  { patterns: [/spiritual|mindful|meditat|buddhis|zen|inner peace/i],                        subjects: ['spirituality', 'mindfulness', 'meditation', 'religion'] },
+  { patterns: [/business|entrepreneur|startup|leadership|finance|money/i],                   subjects: ['business', 'entrepreneurship', 'leadership', 'economics'] },
 ];
 
 function getMoodSubjects(moodText) {
@@ -43,11 +109,19 @@ function getMoodSubjects(moodText) {
       subjects.forEach(s => matched.add(s));
     }
   }
-  // Nothing matched — extract nouns/keywords from the input and use them directly
+  // Nothing matched — try treating it as a genre first, then fall back
   if (matched.size === 0) {
-    const words = moodText.toLowerCase().replace(/[^a-z\s]/g, '').split(/\s+/).filter(w => w.length > 3);
-    words.slice(0, 2).forEach(w => matched.add(w));
-    matched.add('popular fiction');
+    const genreSubjects = getGenreSubjects(moodText);
+    // Only use genre subjects if they're actually different from the raw input
+    const rawNormalized = moodText.toLowerCase().trim();
+    genreSubjects.forEach(s => {
+      if (s !== rawNormalized) matched.add(s);
+    });
+    // Always ensure we have at least some reliable fallback subjects
+    if (matched.size === 0) {
+      matched.add('literary fiction');
+      matched.add('popular fiction');
+    }
   }
   return [...matched].slice(0, 3);
 }
@@ -72,14 +146,21 @@ function mapWorkToBook(work, reason) {
   };
 }
 
-// Search Open Library by free text
+// Free-text search — includes quality filter (skip if rated by fewer than 5 users)
 async function olSearch(query, limit = 15, sort = 'rating') {
   try {
     const fields = 'title,author_name,cover_i,subject,first_publish_year,isbn,key,number_of_pages_median,ratings_average,ratings_count';
     const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=${limit}&sort=${sort}&fields=${fields}`;
     const res = await axios.get(url, { timeout: 12000 });
     return (res.data.docs || [])
-      .filter(d => d.title && d.author_name && d.cover_i) // only books with covers
+      .filter(d =>
+        d.title &&
+        d.author_name &&
+        d.cover_i &&
+        // Quality gate: only include books with at least 5 ratings, OR no rating data at all
+        // (no rating data usually means a newer/less-indexed book, not a bad one)
+        (d.ratings_count == null || d.ratings_count >= 5)
+      )
       .map(d => ({ ...d, authors: [{ name: Array.isArray(d.author_name) ? d.author_name[0] : d.author_name }] }));
   } catch (err) {
     console.error('OL search error:', err.message);
@@ -87,7 +168,7 @@ async function olSearch(query, limit = 15, sort = 'rating') {
   }
 }
 
-// Search Open Library by subject using dedicated subject endpoint (higher quality results)
+// Subject endpoint search — more curated results, higher quality coverage per genre
 async function olSubjectSearch(subject, limit = 12) {
   try {
     const slug = subject.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '_');
@@ -101,7 +182,6 @@ async function olSubjectSearch(subject, limit = 12) {
 }
 
 // Get an author's top subjects so we can find similar authors
-// Filters out noise subjects (location names, format labels, language tags)
 async function getAuthorTopSubjects(authorName) {
   try {
     const fields = 'subject';
@@ -113,11 +193,9 @@ async function getAuthorTopSubjects(authorName) {
     return Object.entries(freq)
       .sort((a, b) => b[1] - a[1])
       .map(([s]) => s)
-      // Remove noise: too short, too long, location-like, or matching the blocklist
       .filter(s => {
         if (s.length < 5 || s.length > 45) return false;
         if (SUBJECT_NOISE.test(s)) return false;
-        // Skip proper nouns that look like place/person names (mostly capitalized single words)
         if (/^[A-Z][a-z]+$/.test(s) && s.length < 10) return false;
         return true;
       })
@@ -153,8 +231,7 @@ router.post('/', async (req, res) => {
   try {
     let items = [];
 
-    // Fetch all library entries for this user upfront (any status) so we can
-    // exclude already-library books from every recommendation mode.
+    // Fetch all library entries for this user upfront so we can exclude them
     const allLibraryEntries = await prisma.libraryEntry.findMany({
       where: { userId: req.user.id },
       include: { book: true },
@@ -162,27 +239,19 @@ router.post('/', async (req, res) => {
     const libraryTitles = new Set(allLibraryEntries.map(e => e.book.title.toLowerCase()));
 
     // ── By Author ──────────────────────────────────────────────────────────────
-    // Strategy:
-    //  1. Get up to 3 of the author's own top-rated works (taste, not a dump)
-    //  2. Extract their most common quality subjects (horror, psychological thriller, etc.)
-    //  3. Search 4 subjects — filtering OUT the original author by full name AND last name
-    //  4. Result ratio: ~3 own + ~7 similar-author picks
     if (mode === 'author') {
       const authorName = input.trim();
       const authorLast = authorName.split(' ').pop().toLowerCase();
 
-      // Step 1: Get a small sample of the author's own best books (capped at 3)
       const ownBooks = await olSearch(`author:${authorName}`, 5, 'rating');
       const ownMapped = ownBooks.slice(0, 3).map(d =>
         mapWorkToBook(d, `Top-rated work by ${authorName}`)
       );
       const ownTitles = new Set(ownMapped.map(b => (b.title || '').toLowerCase()));
 
-      // Step 2: Find this author's top quality subjects (noise-filtered)
       const topSubjects = await getAuthorTopSubjects(authorName);
 
-      // Step 3: For each top subject, get books by OTHER authors (use 4 subjects for variety)
-      const wantSimilar = numLimit - ownMapped.length; // e.g. 7 slots
+      const wantSimilar = numLimit - ownMapped.length;
       const similarBatches = await Promise.all(
         topSubjects.slice(0, 4).map(subject => olSubjectSearch(subject, wantSimilar + 3))
       );
@@ -191,7 +260,6 @@ router.post('/', async (req, res) => {
         .flat()
         .filter(w => {
           const bookAuthor = (w.authors?.[0]?.name || '').toLowerCase();
-          // Exclude the input author by full name and last name
           return (
             !bookAuthor.includes(authorName.toLowerCase()) &&
             !(authorLast.length > 3 && bookAuthor.includes(authorLast))
@@ -205,32 +273,35 @@ router.post('/', async (req, res) => {
         new Set([...ownTitles, ...libraryTitles])
       ).slice(0, wantSimilar);
 
-      // Also filter own books against the library
       const filteredOwn = ownMapped.filter(b => !libraryTitles.has((b.title || '').toLowerCase()));
       items = dedupeBooks([...filteredOwn, ...similarMapped]).slice(0, numLimit);
     }
 
     // ── By Genre ───────────────────────────────────────────────────────────────
-    // Strategy: Use subject endpoint (more curated) + free-text search as backup
+    // Strategy:
+    //  1. Resolve the genre name to 1–3 reliable OL subject slugs via GENRE_MAP
+    //  2. Search all those subjects in parallel (parallel subject endpoint calls)
+    //  3. Also do a quality-rated free-text search as backup to fill gaps
+    //  4. Merge, dedupe, exclude library books
     else if (mode === 'genre') {
       const genre = input.trim();
       const reason = `A highly-regarded book in the ${genre} genre`;
 
-      const [subjectResults, searchResults] = await Promise.all([
-        olSubjectSearch(genre, numLimit + 5),
+      const subjects = getGenreSubjects(genre);
+
+      const [subjectBatches, textResults] = await Promise.all([
+        Promise.all(subjects.map(s => olSubjectSearch(s, numLimit + 5))),
         olSearch(`subject:${genre}`, numLimit, 'rating'),
       ]);
 
-      const fromSubject = subjectResults.map(w => mapWorkToBook(w, reason));
-      const fromSearch = searchResults.map(d => mapWorkToBook(d, reason));
-      items = dedupeBooks([...fromSubject, ...fromSearch], libraryTitles).slice(0, numLimit);
+      const allBooks = [
+        ...subjectBatches.flat().map(w => mapWorkToBook(w, reason)),
+        ...textResults.map(d => mapWorkToBook(d, reason)),
+      ];
+      items = dedupeBooks(allBooks, libraryTitles).slice(0, numLimit);
     }
 
     // ── By Mood ────────────────────────────────────────────────────────────────
-    // Strategy:
-    //  1. Map mood text to real Open Library subjects using regex patterns
-    //  2. Fetch books from those subjects (not from a raw text search)
-    //  3. This avoids returning books titled "something dumb" etc.
     else if (mode === 'mood') {
       const moodText = input.trim();
       const subjects = getMoodSubjects(moodText);
@@ -249,15 +320,14 @@ router.post('/', async (req, res) => {
     // ── By History ─────────────────────────────────────────────────────────────
     // Strategy:
     //  1. Pull user's finished books from DB
-    //  2. Fetch reviews and weight authors/genres by rating
-    //     - Rating >= 4 → count 3x
-    //     - Rating 3    → count 1x
-    //     - Rating 1-2 or no review → skip for subject extraction (but still exclude titles)
+    //  2. Weight authors by review rating:
+    //     - Rating 4–5 → weight 3 (loved it)
+    //     - Rating 3   → weight 2 (liked it)
+    //     - Rating 1–2 → weight 0 (skip — don't recommend similar)
+    //     - No review  → weight 1 (neutral — still contributes, not ignored)
     //  3. For each favourite author, find their top subjects
     //  4. Search those subjects, excluding already-read books
-    //  5. Rank by how many of the user's subjects match
     else if (mode === 'history') {
-      // Use already-fetched library entries, filtered to FINISHED for history analysis
       const finishedEntries = allLibraryEntries
         .filter(e => e.status === 'FINISHED')
         .sort((a, b) => new Date(b.finishedAt) - new Date(a.finishedAt))
@@ -269,28 +339,22 @@ router.post('/', async (req, res) => {
         });
       }
 
-      // Fetch reviews for all finished books
       const reviews = await prisma.review.findMany({
         where: { userId: req.user.id, bookId: { in: finishedEntries.map(e => e.bookId) } },
       });
       const reviewMap = {};
       reviews.forEach(r => { reviewMap[r.bookId] = r.rating; });
 
-      // Build weighted author and genre lists
       const weightedAuthors = [];
       const weightedGenres = [];
 
       for (const entry of finishedEntries) {
-        const rating = reviewMap[entry.bookId];
-        let weight = 0;
-        if (rating >= 4) {
-          weight = 3;
-        } else if (rating === 3) {
-          weight = 1;
-        } else {
-          // rating 1-2 or no review: skip for extraction
-          weight = 0;
-        }
+        const rating = reviewMap[entry.bookId]; // may be undefined if no review
+        let weight;
+        if (rating >= 4)                    weight = 3; // loved it
+        else if (rating === 3)              weight = 2; // liked it
+        else if (rating === 1 || rating === 2) weight = 0; // skip — bad experience
+        else                               weight = 1; // no review — include at low weight
 
         if (weight > 0) {
           const author = entry.book.author.split(',')[0].trim();
@@ -301,12 +365,11 @@ router.post('/', async (req, res) => {
         }
       }
 
-      // If no weighted authors (all low-rated or unreviewed), fall back to unweighted top authors
+      // If still no weighted authors (all books were rated 1–2), fall back to top authors
       let topAuthors;
       if (weightedAuthors.length === 0) {
         topAuthors = [...new Set(finishedEntries.map(e => e.book.author.split(',')[0].trim()))].slice(0, 3);
       } else {
-        // Count frequency of weighted authors
         const authorFreq = {};
         weightedAuthors.forEach(a => { authorFreq[a] = (authorFreq[a] || 0) + 1; });
         topAuthors = Object.entries(authorFreq)
@@ -315,7 +378,6 @@ router.post('/', async (req, res) => {
           .map(([a]) => a);
       }
 
-      // Build stored genres from weighted list (frequency-based)
       let storedGenres;
       if (weightedGenres.length === 0) {
         storedGenres = [...new Set(finishedEntries.flatMap(e => e.book.genres))].slice(0, 4);
@@ -328,7 +390,6 @@ router.post('/', async (req, res) => {
           .map(([g]) => g);
       }
 
-      // Get subjects for each top author
       const authorSubjectBatches = await Promise.all(topAuthors.map(a => getAuthorTopSubjects(a)));
       const allSubjects = [...new Set([...storedGenres, ...authorSubjectBatches.flat()])].slice(0, 5);
 
