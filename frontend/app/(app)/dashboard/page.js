@@ -593,10 +593,10 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#0f1117' }}>
       {showWizard && (
-        <OnboardingWizard onComplete={() => {
-          setShowWizard(false);
+        <OnboardingWizard onComplete={async () => {
           setGoalWidgetKey(k => k + 1); // force ReadingGoalWidget to re-read localStorage
-          fetchLibrary();               // refresh entries to include wizard-added book
+          await fetchLibrary();          // fetch fresh entries BEFORE closing wizard
+          setShowWizard(false);          // close wizard only after entries are up to date
         }} />
       )}
       <div className="flex-1 flex flex-col max-w-6xl mx-auto w-full px-4 py-8 pb-16">
