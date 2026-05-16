@@ -839,7 +839,7 @@ export default function LibraryPage() {
 
         <PageHint
           pageKey="library"
-          message="Mark books as Finished to unlock reviews and personalised recommendations. Use the Status dropdown on any row."
+          message="Mark books as Finished to unlock reviews and personalised recommendations. Use the Import button to bring in your Goodreads library, or Export to download a full CSV of your collection."
           linkText="Discover books →"
           linkHref="/recommendations"
         />
