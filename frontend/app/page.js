@@ -63,7 +63,7 @@ export default function HomePage() {
       </header>
 
       {/* Hero */}
-      <main className="flex-1 flex flex-col items-center text-center px-6 pt-14 pb-12">
+      <main className="flex-1 flex flex-col items-center text-center px-6 pt-14 pb-14">
 
         {/* Badge */}
         <div
