@@ -181,7 +181,7 @@ function RatingChart({ data, reviews }) {
           <h2 className="text-sm font-semibold" style={{color:'#f0f0f5'}}>Rating Distribution</h2>
         </div>
         {avg && (
-          <span className="text-sm font-bold" style={{color:'#fbbf24'}}>{avg} avg</span>
+          <span className="text-sm font-bold" style={{color:'#fbbf24'}}>{avg} Avg</span>
         )}
       </div>
       {total === 0 ? (
