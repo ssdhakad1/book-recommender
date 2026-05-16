@@ -537,8 +537,10 @@ export default function DashboardPage() {
     try {
       if (localStorage.getItem('folio_show_wizard') === '1') {
         setShowWizard(true);
-        // Reset checklist so it appears fresh after onboarding
+        // Reset all checklist state so it appears fresh after onboarding
         localStorage.removeItem('folio_checklist_dismissed');
+        localStorage.removeItem('folio_got_recommendation');
+        localStorage.removeItem('folio_first_review_done');
       }
     } catch {}
   }, []);
