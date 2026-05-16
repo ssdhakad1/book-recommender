@@ -11,11 +11,15 @@ const TASKS = [
   { id: 'set_goal',     label: 'Set a reading goal',          hint: 'Head to Dashboard and set a goal',  href: '/dashboard'       },
 ];
 
-export default function GettingStartedChecklist({ entries = [] }) {
+export default function GettingStartedChecklist({ entries = [], loading = false }) {
   const [dismissed, setDismissed] = useState(true); // hidden until localStorage check
   const [done, setDone] = useState({});
 
   useEffect(() => {
+    // Wait for library to finish loading before evaluating —
+    // otherwise entries=[] makes add_book/finish_book appear unchecked
+    if (loading) return;
+
     try {
       if (localStorage.getItem('folio_checklist_dismissed') === '1') return;
     } catch {}
@@ -41,12 +45,13 @@ export default function GettingStartedChecklist({ entries = [] }) {
     // Auto-dismiss when all complete
     if (Object.values(newDone).every(Boolean)) {
       try { localStorage.setItem('folio_checklist_dismissed', '1'); } catch {}
+      setDismissed(true); // actually hide the component, not just set localStorage
       return;
     }
 
     setDone(newDone);
     setDismissed(false);
-  }, [entries]);
+  }, [entries, loading]);
 
   const dismiss = () => {
     try { localStorage.setItem('folio_checklist_dismissed', '1'); } catch {}
