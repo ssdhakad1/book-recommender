@@ -8,7 +8,7 @@ import {
   BookOpen, Star, Calendar, Hash, ShoppingBag, Plus, Check,
   ChevronLeft, FileText, Pencil, Sparkles, Loader2,
 } from 'lucide-react';
-import { books as booksApi, library as libraryApi, recommendations as recApi } from '../../../../lib/api';
+import { books as booksApi, library as libraryApi } from '../../../../lib/api';
 import { addRecentlyViewed } from '../../../../lib/recentlyViewed';
 import BookSourcesModal from '../../../../components/BookSourcesModal';
 import ReviewModal from '../../../../components/ReviewModal';
@@ -45,7 +45,11 @@ async function fetchOpenLibraryBook(rawId) {
     description = typeof work.description === 'string' ? work.description : work.description.value || null;
   }
 
-  const genres = work.subjects ? work.subjects.slice(0, 5) : [];
+  const genres = work.subjects
+    ? work.subjects
+        .filter(s => !s.includes(':') && !s.includes('=') && s.length <= 40)
+        .slice(0, 5)
+    : [];
   const title  = work.title || 'Unknown Title';
   const buyLink = `https://www.google.com/search?q=${encodeURIComponent(title + ' ' + author + ' buy')}`;
 
@@ -114,16 +118,25 @@ export default function BookDetailPage() {
     if (googleBooksId) fetchBook();
   }, [googleBooksId, fetchBook]);
 
-  // Fetch similar books once we know the author
+  // Fetch more books by the same author directly from Open Library
   useEffect(() => {
     if (!book?.author) return;
     setSimilarLoading(true);
-    recApi.getRecommendations('author', book.author, 6)
-      .then((data) => {
-        // Exclude this book from similar list
-        const recs = (data.recommendations || [])
-          .filter((r) => r.title?.toLowerCase() !== book.title?.toLowerCase());
-        setSimilar(recs.slice(0, 5));
+    const author = book.author;
+    const title  = book.title;
+    fetch(`https://openlibrary.org/search.json?author=${encodeURIComponent(author)}&limit=20&fields=key,title,author_name,cover_i&sort=editions`)
+      .then(r => r.json())
+      .then(data => {
+        const books = (data.docs || [])
+          .filter(d => d.cover_i && d.title?.toLowerCase() !== title?.toLowerCase())
+          .slice(0, 5)
+          .map(d => ({
+            googleBooksId: `OL_${d.key.replace('/works/', '')}`,
+            title:    d.title,
+            author:   d.author_name?.[0] || author,
+            coverUrl: `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg`,
+          }));
+        setSimilar(books);
       })
       .catch(() => {})
       .finally(() => setSimilarLoading(false));
@@ -388,7 +401,7 @@ export default function BookDetailPage() {
             {similarLoading ? (
               <div className="flex items-center gap-2" style={{color:'#4a4d62'}}>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm">Finding similar books…</span>
+                <span className="text-sm">Finding {book.author}&apos;s other works…</span>
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
