@@ -512,6 +512,7 @@ export default function DashboardPage() {
   const { user } = useAuth();
 
   const [showWizard, setShowWizard] = useState(false);
+  const [goalWidgetKey, setGoalWidgetKey] = useState(0);
   const [entries, setEntries] = useState([]);
   const [libraryLoading, setLibraryLoading] = useState(true);
   const [libraryBookIds, setLibraryBookIds] = useState(new Set());
@@ -523,20 +524,30 @@ export default function DashboardPage() {
   const [sessionDyk]    = useState(() => pickOne(DID_YOU_KNOW, DYK_KEY));
   const [sessionTrivia] = useState(() => pickOne(TRIVIA,      TRIVIA_KEY));
 
+  const fetchLibrary = useCallback(async () => {
+    try {
+      const data = await libraryApi.getLibrary();
+      const all = data.entries || [];
+      setEntries(all);
+      setLibraryBookIds(new Set(all.map(e => e.book?.googleBooksId).filter(Boolean)));
+    } catch { /* non-critical */ }
+  }, []);
+
   useEffect(() => {
     try {
-      if (localStorage.getItem('folio_show_wizard') === '1') setShowWizard(true);
+      if (localStorage.getItem('folio_show_wizard') === '1') {
+        setShowWizard(true);
+        // Reset checklist so it appears fresh after onboarding
+        localStorage.removeItem('folio_checklist_dismissed');
+      }
     } catch {}
   }, []);
 
   useEffect(() => {
     async function init() {
       try {
-        const data = await libraryApi.getLibrary();
-        const all = data.entries || [];
-        setEntries(all);
-        setLibraryBookIds(new Set(all.map(e => e.book?.googleBooksId).filter(Boolean)));
-      } catch { /* non-critical */ } finally {
+        await fetchLibrary();
+      } finally {
         setLibraryLoading(false);
       }
 
@@ -549,7 +560,7 @@ export default function DashboardPage() {
       }
     }
     init();
-  }, []);
+  }, [fetchLibrary]);
 
   const handleAddToLibrary = useCallback(async (book) => {
     try {
@@ -581,7 +592,13 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#0f1117' }}>
-      {showWizard && <OnboardingWizard onComplete={() => setShowWizard(false)} />}
+      {showWizard && (
+        <OnboardingWizard onComplete={() => {
+          setShowWizard(false);
+          setGoalWidgetKey(k => k + 1); // force ReadingGoalWidget to re-read localStorage
+          fetchLibrary();               // refresh entries to include wizard-added book
+        }} />
+      )}
       <div className="flex-1 flex flex-col max-w-6xl mx-auto w-full px-4 py-8 pb-16">
 
         {/* Greeting + Stats + top cards */}
@@ -723,7 +740,7 @@ export default function DashboardPage() {
             <div className="space-y-8">
               <GettingStartedChecklist entries={entries} />
               <ReadingStreakWidget entries={entries} />
-              <ReadingGoalWidget finishedCount={stats.finished} />
+              <ReadingGoalWidget key={goalWidgetKey} finishedCount={stats.finished} />
               <UpNextCard entries={entries} loading={libraryLoading} />
               <RecentlyViewedCard />
               <BookTriviaSection initial={sessionTrivia} />
