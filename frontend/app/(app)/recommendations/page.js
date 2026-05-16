@@ -14,9 +14,15 @@ const TABS = [
 ];
 
 const GENRE_OPTIONS = [
-  'Fiction', 'Non-Fiction', 'Fantasy', 'Science Fiction', 'Mystery', 'Thriller',
-  'Romance', 'Historical Fiction', 'Horror', 'Self-Help', 'Biography', 'Philosophy',
-  'Psychology', 'Business', 'Poetry', 'Graphic Novel', 'Young Adult', "Children's",
+  'Action & Adventure', 'Art & Design', 'Biography', 'Business', "Children's",
+  'Classic Literature', 'Cooking & Food', 'Cozy Mystery', 'Crime', 'Dark Fantasy',
+  'Dystopian', 'Epic Fantasy', 'Espionage & Spy', 'Fantasy', 'Fiction',
+  'Graphic Novel', 'Historical Fiction', 'History', 'Horror', 'Humor & Comedy',
+  'Literary Fiction', 'Manga', 'Memoir', 'Mystery', 'Mythology & Folklore',
+  'Non-Fiction', 'Paranormal', 'Philosophy', 'Poetry', 'Political Fiction',
+  'Psychology', 'Romance', 'Science', 'Science Fiction', 'Self-Help',
+  'Short Stories', 'Spirituality', 'Sports', 'Thriller', 'Travel',
+  'True Crime', 'Urban Fantasy', 'Western', 'Young Adult',
 ];
 
 function SkeletonCard() {
@@ -35,7 +41,7 @@ function SkeletonCard() {
 export default function RecommendationsPage() {
   const [activeTab, setActiveTab] = useState('author');
   const [authorInput, setAuthorInput] = useState('');
-  const [genreInput, setGenreInput] = useState('Fiction');
+  const [genreInput, setGenreInput] = useState('Fantasy');
   const [moodInput, setMoodInput] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);

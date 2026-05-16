@@ -5,11 +5,15 @@ import { Check, Search, BookOpen, Sparkles } from 'lucide-react';
 import { books as booksApi, library as libraryApi } from '../lib/api';
 
 const GENRES = [
-  'Fantasy', 'Science Fiction', 'Mystery', 'Thriller', 'Romance',
-  'Historical Fiction', 'Literary Fiction', 'Horror', 'Biography',
-  'Self-Help', 'Business', 'Psychology', 'Philosophy', 'Poetry',
-  'Young Adult', 'Classic Literature', 'Adventure', 'Non-Fiction',
-  'Graphic Novel', 'True Crime',
+  'Action & Adventure', 'Art & Design', 'Biography', 'Business', "Children's",
+  'Classic Literature', 'Cooking & Food', 'Cozy Mystery', 'Crime', 'Dark Fantasy',
+  'Dystopian', 'Epic Fantasy', 'Espionage & Spy', 'Fantasy', 'Fiction',
+  'Graphic Novel', 'Historical Fiction', 'History', 'Horror', 'Humor & Comedy',
+  'Literary Fiction', 'Manga', 'Memoir', 'Mystery', 'Mythology & Folklore',
+  'Non-Fiction', 'Paranormal', 'Philosophy', 'Poetry', 'Political Fiction',
+  'Psychology', 'Romance', 'Science', 'Science Fiction', 'Self-Help',
+  'Short Stories', 'Spirituality', 'Sports', 'Thriller', 'Travel',
+  'True Crime', 'Urban Fantasy', 'Western', 'Young Adult',
 ];
 
 const GOAL_PRESETS = [6, 12, 24, 52];
