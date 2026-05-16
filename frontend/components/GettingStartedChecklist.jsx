@@ -17,7 +17,7 @@ export default function GettingStartedChecklist({ entries = [] }) {
 
   useEffect(() => {
     try {
-      if (localStorage.getItem('br_checklist_dismissed') === '1') return;
+      if (localStorage.getItem('folio_checklist_dismissed') === '1') return;
     } catch {}
 
     const hasBook     = entries.length > 0;
@@ -25,9 +25,9 @@ export default function GettingStartedChecklist({ entries = [] }) {
 
     let goalSet = false, gotRec = false, reviewDone = false;
     try {
-      goalSet    = !!localStorage.getItem('br_reading_goal');
-      gotRec     = !!localStorage.getItem('br_got_recommendation');
-      reviewDone = !!localStorage.getItem('br_first_review_done');
+      goalSet    = !!localStorage.getItem('folio_reading_goal');
+      gotRec     = !!localStorage.getItem('folio_got_recommendation');
+      reviewDone = !!localStorage.getItem('folio_first_review_done');
     } catch {}
 
     const newDone = {
@@ -40,7 +40,7 @@ export default function GettingStartedChecklist({ entries = [] }) {
 
     // Auto-dismiss when all complete
     if (Object.values(newDone).every(Boolean)) {
-      try { localStorage.setItem('br_checklist_dismissed', '1'); } catch {}
+      try { localStorage.setItem('folio_checklist_dismissed', '1'); } catch {}
       return;
     }
 
@@ -49,7 +49,7 @@ export default function GettingStartedChecklist({ entries = [] }) {
   }, [entries]);
 
   const dismiss = () => {
-    try { localStorage.setItem('br_checklist_dismissed', '1'); } catch {}
+    try { localStorage.setItem('folio_checklist_dismissed', '1'); } catch {}
     setDismissed(true);
   };
 

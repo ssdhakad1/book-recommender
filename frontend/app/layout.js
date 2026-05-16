@@ -4,7 +4,7 @@ import { ToastProvider } from '../context/ToastContext';
 import NavbarWrapper from '../components/NavbarWrapper';
 
 export const metadata = {
-  title: 'Book Recommender',
+  title: 'Folio',
   description: 'Get AI-powered book recommendations based on your taste, mood, and reading history.',
 };
 

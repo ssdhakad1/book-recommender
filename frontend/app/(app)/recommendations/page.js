@@ -63,7 +63,7 @@ export default function RecommendationsPage() {
 
     // Load saved genre preferences from onboarding wizard
     try {
-      const prefs = JSON.parse(localStorage.getItem('br_genre_prefs') || '[]');
+      const prefs = JSON.parse(localStorage.getItem('folio_genre_prefs') || '[]');
       if (Array.isArray(prefs) && prefs.length > 0) setSavedGenres(prefs);
     } catch {}
   }, []);
@@ -79,7 +79,7 @@ export default function RecommendationsPage() {
         activeTab === 'mood' ? moodInput : '';
       const data = await recApi.getRecommendations(activeTab, input, 10);
       setResults(data.recommendations || []);
-      try { localStorage.setItem('br_got_recommendation', '1'); } catch {};
+      try { localStorage.setItem('folio_got_recommendation', '1'); } catch {};
     } catch (err) {
       setError(err.message || 'Failed to get recommendations. Please try again.');
     } finally {

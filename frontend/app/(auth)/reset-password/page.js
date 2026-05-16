@@ -57,7 +57,7 @@ function ResetPasswordForm() {
           <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{backgroundColor:'#6366f1'}}>
             <BookOpen size={16} style={{color:'white'}} />
           </div>
-          <span className="text-xl font-bold tracking-tight" style={{color:'#f0f0f5'}}>BookRecommender</span>
+          <span className="text-xl font-bold tracking-tight" style={{color:'#f0f0f5'}}>Folio</span>
         </Link>
         <h1 className="text-2xl font-bold tracking-tight" style={{color:'#f0f0f5'}}>Set New Password</h1>
         <p className="text-sm mt-1" style={{color:'#8b8fa8'}}>Choose a strong password for your account.</p>

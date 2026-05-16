@@ -676,9 +676,9 @@ export default function LibraryPage() {
 
         // Milestone: first book ever finished
         let alreadySeen = false;
-        try { alreadySeen = localStorage.getItem('br_first_finish_seen') === '1'; } catch {}
+        try { alreadySeen = localStorage.getItem('folio_first_finish_seen') === '1'; } catch {}
         if (wasFirstFinish && !alreadySeen) {
-          try { localStorage.setItem('br_first_finish_seen', '1'); } catch {}
+          try { localStorage.setItem('folio_first_finish_seen', '1'); } catch {}
           setFirstFinishModal({ open: true, entryId });
         }
       }
@@ -738,7 +738,7 @@ export default function LibraryPage() {
     setReviews((prev) => ({ ...prev, [editModal.entryId]: newReview }));
     setEditModal({ open: false, entryId: null });
     showToast('Review saved!', 'success');
-    try { localStorage.setItem('br_first_review_done', '1'); } catch {}
+    try { localStorage.setItem('folio_first_review_done', '1'); } catch {}
   };
 
   const handleSort = (key) => {

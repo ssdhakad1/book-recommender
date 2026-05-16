@@ -4,13 +4,13 @@ import { useState, useEffect } from 'react';
 import { Lightbulb, X } from 'lucide-react';
 
 function getHintsSeen() {
-  try { return JSON.parse(localStorage.getItem('br_hints_seen') || '[]'); } catch { return []; }
+  try { return JSON.parse(localStorage.getItem('folio_hints_seen') || '[]'); } catch { return []; }
 }
 
 function markHintSeen(pageKey) {
   try {
     const seen = getHintsSeen();
-    if (!seen.includes(pageKey)) localStorage.setItem('br_hints_seen', JSON.stringify([...seen, pageKey]));
+    if (!seen.includes(pageKey)) localStorage.setItem('folio_hints_seen', JSON.stringify([...seen, pageKey]));
   } catch {}
 }
 

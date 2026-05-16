@@ -59,7 +59,7 @@ export default function OnboardingWizard({ onComplete }) {
     setSelectedGenres(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
 
   const handleGenreNext = () => {
-    try { localStorage.setItem('br_genre_prefs', JSON.stringify(selectedGenres)); } catch {}
+    try { localStorage.setItem('folio_genre_prefs', JSON.stringify(selectedGenres)); } catch {}
     setStep(1);
   };
 
@@ -82,14 +82,14 @@ export default function OnboardingWizard({ onComplete }) {
     const val = parseInt(raw, 10);
     if (!isNaN(val) && val > 0) {
       try {
-        localStorage.setItem('br_reading_goal', JSON.stringify({ year: new Date().getFullYear(), target: val }));
+        localStorage.setItem('folio_reading_goal', JSON.stringify({ year: new Date().getFullYear(), target: val }));
       } catch {}
     }
     setStep(3);
   };
 
   const finish = () => {
-    try { localStorage.removeItem('br_show_wizard'); } catch {}
+    try { localStorage.removeItem('folio_show_wizard'); } catch {}
     if (onComplete) onComplete();
   };
 
@@ -132,7 +132,7 @@ export default function OnboardingWizard({ onComplete }) {
         {step === 0 && (
           <div className="p-6">
             <h2 className="text-lg font-bold mb-1" style={{ color: '#f0f0f5' }}>
-              Welcome to BookRecommender
+              Welcome to Folio
             </h2>
             <p className="text-sm mb-5" style={{ color: '#8b8fa8' }}>
               Pick at least 3 genres you enjoy — we&apos;ll personalise your recommendations.

@@ -42,7 +42,7 @@ export default function LoginPage() {
               <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{backgroundColor:'#6366f1'}}>
                 <BookOpen size={16} style={{color:'white'}} />
               </div>
-              <span className="text-xl font-bold text-[#f0f0f5] tracking-tight">BookRecommender</span>
+              <span className="text-xl font-bold text-[#f0f0f5] tracking-tight">Folio</span>
             </Link>
             <h1 className="text-2xl font-bold text-[#f0f0f5] tracking-tight">Welcome Back!</h1>
             <p className="text-[#8b8fa8] text-sm mt-1">Sign in to your account to continue.</p>

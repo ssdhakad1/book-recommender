@@ -32,7 +32,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem('br_genre_prefs') || '[]');
+      const saved = JSON.parse(localStorage.getItem('folio_genre_prefs') || '[]');
       if (Array.isArray(saved)) setSelectedGenres(saved);
     } catch {}
   }, []);
@@ -41,7 +41,7 @@ export default function ProfilePage() {
     setSelectedGenres((prev) => prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]);
 
   const handleSaveGenres = () => {
-    try { localStorage.setItem('br_genre_prefs', JSON.stringify(selectedGenres)); } catch {}
+    try { localStorage.setItem('folio_genre_prefs', JSON.stringify(selectedGenres)); } catch {}
     setGenreSaved(true);
     setTimeout(() => setGenreSaved(false), 2500);
   };

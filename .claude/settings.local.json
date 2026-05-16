@@ -6,7 +6,11 @@
       "mcp__Claude_in_Chrome__javascript_tool",
       "mcp__Claude_in_Chrome__read_network_requests",
       "mcp__Claude_in_Chrome__find",
-      "mcp__Claude_in_Chrome__form_input"
+      "mcp__Claude_in_Chrome__form_input",
+      "Bash(git add *)",
+      "Bash(git commit -m 'fix: remove icon containers from landing page feature cards — plain coloured icons *)",
+      "Bash(git push *)",
+      "Bash(git commit *)"
     ]
   }
 }

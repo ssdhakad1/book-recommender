@@ -50,7 +50,7 @@ export default function HomePage() {
           <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#6366f1' }}>
             <BookOpen className="w-4 h-4 text-white" />
           </div>
-          <span className="font-bold text-base" style={{ color: '#f0f0f5' }}>BookRecommender</span>
+          <span className="font-bold text-base" style={{ color: '#f0f0f5' }}>Folio</span>
         </div>
         <div className="flex items-center gap-2">
           <Link href="/login" className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:bg-[#1a1d27]" style={{ color: '#8b8fa8' }}>
@@ -201,7 +201,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="py-5 text-center text-xs border-t flex-shrink-0" style={{ color: '#4a4d62', borderColor: '#2a2d3e' }}>
-        BookRecommender · Powered by Open Library
+        Folio · Powered by Open Library
       </footer>
     </div>
   );

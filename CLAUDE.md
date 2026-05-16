@@ -1,4 +1,4 @@
-# CLAUDE.md — BookRecommender Codebase Guide
+# CLAUDE.md — Folio Codebase Guide
 
 This file is the authoritative reference for working on this codebase. Read it fully before making changes. It covers architecture, conventions, gotchas, and everything needed to work without asking follow-up questions.
 
@@ -21,7 +21,7 @@ A full-stack, AI-powered book recommendation platform. Users can:
 ## Repository Layout
 
 ```
-Book Recommender/
+folio/
 ├── frontend/                         # Next.js 14 (App Router)
 │   ├── app/
 │   │   ├── page.js                   # Public landing page
@@ -185,11 +185,11 @@ Every piece of rotating content uses `sessionStorage`. Once picked per session, 
 
 | sessionStorage key | Content | Pool size |
 |---|---|---|
-| `br_mood_indices` | 6 mood indices (JSON array) | 30 moods |
-| `br_quote` | Index into QUOTES | 50 |
-| `br_word` | Index into WORDS | 50 |
-| `br_dyk` | Index into DID_YOU_KNOW | 50 |
-| `br_trivia` | Index into TRIVIA | 50 |
+| `folio_mood_indices` | 6 mood indices (JSON array) | 30 moods |
+| `folio_quote` | Index into QUOTES | 50 |
+| `folio_word` | Index into WORDS | 50 |
+| `folio_dyk` | Index into DID_YOU_KNOW | 50 |
+| `folio_trivia` | Index into TRIVIA | 50 |
 
 Picker helper:
 ```js
@@ -234,7 +234,7 @@ These are fixed at `height: '130px'` (hardcoded px) on their container. The card
 
 ### Reading Goal
 
-Persisted in `localStorage` under key `br_reading_goal` (year target) and `br_reading_goal_year`. It counts FINISHED books from the current calendar year.
+Persisted in `localStorage` under key `folio_reading_goal` (year target) and `folio_reading_goal_year`. It counts FINISHED books from the current calendar year.
 
 ### Data Loading
 

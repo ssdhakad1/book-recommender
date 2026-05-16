@@ -50,7 +50,7 @@ const MOOD_POOL = [
   { label: '🌌 Space Opera',        query: 'space opera galaxy aliens epic sci-fi adventure' },
 ];
 
-const MOOD_SESSION_KEY = 'br_mood_chips';
+const MOOD_SESSION_KEY = 'folio_mood_chips';
 
 function pickSessionMoods() {
   try {
@@ -68,11 +68,11 @@ function pickSessionMoods() {
   return picked;
 }
 
-const GOAL_KEY        = 'br_reading_goal';
-const QUOTE_KEY       = 'br_quote';
-const WORD_KEY        = 'br_word';
-const DYK_KEY         = 'br_dyk';
-const TRIVIA_KEY      = 'br_trivia';
+const GOAL_KEY        = 'folio_reading_goal';
+const QUOTE_KEY       = 'folio_quote';
+const WORD_KEY        = 'folio_word';
+const DYK_KEY         = 'folio_dyk';
+const TRIVIA_KEY      = 'folio_trivia';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -525,7 +525,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     try {
-      if (localStorage.getItem('br_show_wizard') === '1') setShowWizard(true);
+      if (localStorage.getItem('folio_show_wizard') === '1') setShowWizard(true);
     } catch {}
   }, []);
 

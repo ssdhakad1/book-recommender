@@ -35,7 +35,7 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await register(email, password, name);
-      try { localStorage.setItem('br_show_wizard', '1'); } catch {}
+      try { localStorage.setItem('folio_show_wizard', '1'); } catch {}
       router.replace('/dashboard');
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
@@ -55,7 +55,7 @@ export default function RegisterPage() {
               <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{backgroundColor:'#6366f1'}}>
                 <BookOpen size={16} style={{color:'white'}} />
               </div>
-              <span className="text-xl font-bold text-[#f0f0f5] tracking-tight">BookRecommender</span>
+              <span className="text-xl font-bold text-[#f0f0f5] tracking-tight">Folio</span>
             </Link>
             <h1 className="text-2xl font-bold text-[#f0f0f5] tracking-tight">Create Your Account</h1>
             <p className="text-[#8b8fa8] text-sm mt-1">Start discovering great books today.</p>

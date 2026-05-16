@@ -1,4 +1,4 @@
-const KEY = 'br_recently_viewed';
+const KEY = 'folio_recently_viewed';
 const MAX = 6;
 
 export function addRecentlyViewed(book) {
