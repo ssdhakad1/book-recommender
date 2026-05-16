@@ -11,14 +11,15 @@ const TASKS = [
   { id: 'set_goal',     label: 'Set a reading goal',          hint: 'Head to Dashboard and set a goal',  href: '/dashboard'       },
 ];
 
-export default function GettingStartedChecklist({ entries = [], loading = false }) {
+export default function GettingStartedChecklist({ entries = [], loading = false, wizardOpen = false }) {
   const [dismissed, setDismissed] = useState(true); // hidden until localStorage check
   const [done, setDone] = useState({});
 
   useEffect(() => {
-    // Wait for library to finish loading before evaluating —
-    // otherwise entries=[] makes add_book/finish_book appear unchecked
-    if (loading) return;
+    // Wait for library to finish loading and wizard to close before evaluating —
+    // prevents checklist appearing behind the wizard blur, and prevents
+    // the premature empty-entries evaluation that causes a flash on dismiss
+    if (loading || wizardOpen) return;
 
     try {
       if (localStorage.getItem('folio_checklist_dismissed') === '1') return;
@@ -51,7 +52,7 @@ export default function GettingStartedChecklist({ entries = [], loading = false 
 
     setDone(newDone);
     setDismissed(false);
-  }, [entries, loading]);
+  }, [entries, loading, wizardOpen]);
 
   const dismiss = () => {
     try { localStorage.setItem('folio_checklist_dismissed', '1'); } catch {}

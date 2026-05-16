@@ -738,7 +738,7 @@ export default function DashboardPage() {
           {/* Right: sidebar */}
           <div className="lg:border-l lg:pl-6" style={{ borderColor: '#2a2d3e' }}>
             <div className="space-y-8">
-              <GettingStartedChecklist entries={entries} loading={libraryLoading} />
+              <GettingStartedChecklist entries={entries} loading={libraryLoading} wizardOpen={showWizard} />
               <ReadingStreakWidget entries={entries} />
               <ReadingGoalWidget key={goalWidgetKey} finishedCount={stats.finished} />
               <UpNextCard entries={entries} loading={libraryLoading} />
