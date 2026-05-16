@@ -115,10 +115,7 @@ export default function BookDetailPage() {
   }, [googleBooksId]);
 
   useEffect(() => {
-    if (googleBooksId) {
-      window.scrollTo(0, 0);
-      fetchBook();
-    }
+    if (googleBooksId) fetchBook();
   }, [googleBooksId, fetchBook]);
 
   // Fetch more books by the same author directly from Open Library

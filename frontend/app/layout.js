@@ -2,6 +2,7 @@ import './globals.css';
 import { AuthProvider } from '../context/AuthContext';
 import { ToastProvider } from '../context/ToastContext';
 import NavbarWrapper from '../components/NavbarWrapper';
+import ScrollToTop from '../components/ScrollToTop';
 
 export const metadata = {
   title: 'Folio',
@@ -14,6 +15,7 @@ export default function RootLayout({ children }) {
       <body className="min-h-screen bg-[#0f1117] text-[#f0f0f5] antialiased">
         <AuthProvider>
           <ToastProvider>
+            <ScrollToTop />
             <NavbarWrapper />
             {/* Spacer so content is not hidden behind fixed navbar */}
             <div id="navbar-spacer" />
