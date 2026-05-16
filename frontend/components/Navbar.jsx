@@ -112,11 +112,10 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
 
           {/* Logo */}
-          <Link href="/dashboard" className="flex items-center gap-2.5 flex-shrink-0">
+          <Link href="/dashboard" className="flex items-center flex-shrink-0">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{backgroundColor:'#6366f1'}}>
               <BookOpen className="w-4 h-4 text-white" />
             </div>
-            <span className="font-bold text-base" style={{color:'#f0f0f5'}}>BookRecommender</span>
           </Link>
 
           {/* Desktop nav links */}
