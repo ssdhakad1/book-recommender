@@ -25,8 +25,8 @@ function DeleteAccountModal({ onClose, onConfirm, loading }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{backgroundColor:'rgba(0,0,0,0.75)', backdropFilter:'blur(4px)'}}>
       <div className="rounded-2xl border p-6 max-w-sm w-full" style={{backgroundColor:'#1a1d27', borderColor:'#2a2d3e'}}>
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{backgroundColor:'rgba(239,68,68,0.12)'}}>
-            <AlertTriangle className="w-5 h-5" style={{color:'#ef4444'}} />
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style={{backgroundColor:'rgba(239,68,68,0.12)'}}>
+            <AlertTriangle className="w-6 h-6" style={{color:'#ef4444'}} />
           </div>
           <div>
             <h3 className="font-bold text-sm" style={{color:'#f0f0f5'}}>Delete Account</h3>
