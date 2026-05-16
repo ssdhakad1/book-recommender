@@ -35,22 +35,35 @@ const STATUS_ORDER = { WISHLIST: 0, READING: 1, FINISHED: 2, DNF: 3 };
 
 function exportLibraryCSV(entries, reviews) {
   const escape = (s) => `"${String(s || '').replace(/"/g, '""')}"`;
-  const header = ['Title', 'Author', 'Status', 'Rating', 'Review', 'Date Added', 'Date Finished', 'Pages', 'Genres'].join(',');
+  const fmt    = (d) => d ? new Date(d).toLocaleDateString('en-US') : '';
+  const header = [
+    'Title', 'Author', 'Status',
+    'Rating', 'Review', 'Notes',
+    'Date Added', 'Date Started', 'Date Finished',
+    'Current Page', 'Pages', 'Published Year',
+    'ISBN', 'OL Rating', 'Genres',
+  ].join(',');
   const rows = entries.map((e) => {
     const r = reviews[e.id];
     return [
       escape(e.book?.title),
       escape(e.book?.author),
       e.status,
-      r?.rating || '',
+      r?.rating                              || '',
       escape(r?.content),
-      e.addedAt    ? new Date(e.addedAt).toLocaleDateString('en-US')    : '',
-      e.finishedAt ? new Date(e.finishedAt).toLocaleDateString('en-US') : '',
-      e.book?.pageCount || '',
+      escape(e.notes),
+      fmt(e.addedAt),
+      fmt(e.startedAt),
+      fmt(e.finishedAt),
+      e.currentPage                          != null ? e.currentPage : '',
+      e.book?.pageCount                      || '',
+      e.book?.publishedDate                  || '',
+      e.book?.isbn                           || '',
+      e.book?.averageRating                  != null ? e.book.averageRating : '',
       escape((e.book?.genres || []).join(', ')),
     ].join(',');
   });
-  const csv = [header, ...rows].join('\n');
+  const csv  = [header, ...rows].join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
